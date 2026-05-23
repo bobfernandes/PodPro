@@ -1,9 +1,0 @@
-{
-  "name": "podpro",
-  "version": "1.0.0",
-  "description": "PodPrô - Concursos de Educação",
-  "main": "index.js",
-  "dependencies": {
-    "@supabase/supabase-js": "^2.39.0"
-  }
-}
