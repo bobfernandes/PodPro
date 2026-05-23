@@ -66,7 +66,7 @@ select.inp{appearance:none;-webkit-appearance:none}
 <script>
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
 const API_BASE = window.location.origin;
-const ANTHROPIC_API_KEY = "C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";
+// Anthropic handled server-side
 
 const UF = {AC:"Acre",AL:"Alagoas",AM:"Amazonas",AP:"Amapá",BA:"Bahia",CE:"Ceará",DF:"Distrito Federal",ES:"Espírito Santo",GO:"Goiás",MA:"Maranhão",MG:"Minas Gerais",MS:"Mato Grosso do Sul",MT:"Mato Grosso",PA:"Pará",PB:"Paraíba",PE:"Pernambuco",PI:"Piauí",PR:"Paraná",RJ:"Rio de Janeiro",RN:"Rio Grande do Norte",RO:"Rondônia",RR:"Roraima",RS:"Rio Grande do Sul",SC:"Santa Catarina",SE:"Sergipe",SP:"São Paulo",TO:"Tocantins"};
 
@@ -228,30 +228,17 @@ async function assinarPRO(uid,email,nome){
 // ─── CONCURSOS ────────────────────────────────────────────────────────────────
 async function loadConcursos(uf){
   setState({cLoading:true,concursos:[]});
-  // Se a chave Anthropic não foi configurada, usa base curada direto
-  if(!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY.includes('COLE_SUA')){
-    setState({concursos:getConcursosBase(uf),cFonte:"base",cLoading:false});
-    return;
-  }
   try{
     const estado=UF[uf];
-    const prompt='Pesquise concursos publicos abertos ou previstos para 2025 e 2026 na area de EDUCACAO (professor, pedagogo, orientador, coordenador, diretor) em '+estado+'. Responda SOMENTE com JSON valido sem markdown: {"editais":[{"cargo":"string","cidade":"string","banca":"string","vagas":null,"salario":"string","inscricao":"string","status":"Aberto","descricao":"string","link":"string"}]} Maximo 5 editais reais.';
-    const res=await fetch("https://api.anthropic.com/v1/messages",{
-      method:"POST",
-      headers:{"Content-Type":"application/json","x-api-key":ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,tools:[{type:"web_search_20250305",name:"web_search"}],messages:[{role:"user",content:prompt}]})
-    });
+    const res=await fetch(API_BASE+'/api/buscar-concursos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uf,estado})});
     if(!res.ok)throw new Error('HTTP '+res.status);
     const data=await res.json();
-    const txt=(data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("");
-    const m=txt.match(/\{[\s\S]*"editais"[\s\S]*\}/);
-    if(!m)throw new Error("sem JSON");
-    const editais=JSON.parse(m[0]).editais||[];
-    if(editais.length===0)throw new Error("vazio");
-    setState({concursos:editais,cFonte:"live",cLoading:false});
+    const editais=data.editais||[];
+    if(editais.length===0)throw new Error('vazio');
+    setState({concursos:editais,cFonte:'live',cLoading:false});
     showToast(editais.length+' concursos ao vivo! 🎯');
   }catch(e){
-    setState({concursos:getConcursosBase(uf),cFonte:"base",cLoading:false});
+    setState({concursos:getConcursosBase(uf),cFonte:'base',cLoading:false});
   }
 }
 // ─── STATE ────────────────────────────────────────────────────────────────────
