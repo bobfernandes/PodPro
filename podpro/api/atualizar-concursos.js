@@ -15,78 +15,35 @@ const UF_ESTADOS = {
   TO:"Tocantins"
 };
 
-// Palavras-chave de educação para filtrar
-const PALAVRAS_EDUCACAO = [
-  'professor', 'professora', 'pedagogo', 'pedagoga', 'orientador',
-  'coordenador', 'diretor de escola', 'supervisor de ensino',
-  'docente', 'educação infantil', 'ensino fundamental', 'ensino médio',
-  'magistério', 'licenciatura'
-];
+async function buscarEditaisPorEstado(uf, estado, apiKey) {
+  const prompt = `Pesquise concursos publicos abertos ou previstos para 2025 e 2026 na area de EDUCACAO (professor, pedagogo, orientador, coordenador, diretor) em ${estado}. Responda SOMENTE com JSON valido sem markdown: {"editais":[{"cargo":"string","cidade":"string","banca":"string","vagas":null,"salario":"string","inscricao":"string","status":"Aberto","descricao":"string","link":"string"}]} Maximo 5 editais reais.`;
 
-async function scrapeConCursosPorUF(uf) {
-  // URL do PCI filtrada por UF na página de professores
-  const url = `https://www.pciconcursos.com.br/professores/`;
-  
-  const response = await fetch(url, {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
     headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      'Accept-Language': 'pt-BR,pt;q=0.9',
-    }
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+      messages: [{ role: 'user', content: prompt }]
+    })
   });
 
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  
-  const html = await response.text();
-  return parseEditais(html, uf);
-}
-
-function parseEditais(html, ufFiltro) {
-  const editais = [];
-  
-  // O PCI usa estrutura de tabela/lista com padrão identificável
-  // Cada concurso tem: órgão, UF, vagas, cargo, salário, data inscrição
-  // Exemplo: "Prefeitura de Guarulhos · SP · 20 vagas até R$ 3.791,98 Professor de Educação Infantil Superior · 02/06/2026"
-  
-  // Regex para capturar blocos de concurso
-  const blocoRegex = /([^·\n]+?)\s*·\s*(AC|AL|AM|AP|BA|CE|DF|ES|GO|MA|MG|MS|MT|PA|PB|PE|PI|PR|RJ|RN|RO|RR|RS|SC|SE|SP|TO)\s*·\s*([^·]+?vagas[^·]*?)\s*·\s*([^·\n]+?)\s*·\s*([\d\/]+(?:\s*a\s*[\d\/]+)?|Prorrogado[^·\n]*)/gi;
-
-  let match;
-  while ((match = blocoRegex.exec(html)) !== null) {
-    const orgao = match[1].trim();
-    const uf = match[2].trim();
-    const vagasInfo = match[3].trim();
-    const cargo = match[4].trim();
-    const inscricao = match[5].trim();
-
-    // Filtra pelo estado desejado
-    if (uf !== ufFiltro.toUpperCase()) continue;
-
-    // Verifica se é área de educação
-    const cargoLower = cargo.toLowerCase();
-    const eEducacao = PALAVRAS_EDUCACAO.some(p => cargoLower.includes(p));
-    if (!eEducacao) continue;
-
-    // Extrai vagas e salário
-    const vagasMatch = vagasInfo.match(/(\d+)\s*vagas?/i);
-    const salarioMatch = vagasInfo.match(/R\$\s*([\d.,]+)/i);
-
-    editais.push({
-      cargo: cargo.replace(/\s+/g, ' ').trim(),
-      cidade: orgao.replace(/\s+/g, ' ').trim(),
-      banca: 'A confirmar',
-      vagas: vagasMatch ? parseInt(vagasMatch[1]) : null,
-      salario: salarioMatch ? `R$ ${salarioMatch[1]}` : 'A confirmar',
-      inscricao: inscricao.trim(),
-      status: 'Aberto',
-      descricao: `Concurso público em ${uf} para ${cargo}`,
-      link: `https://www.pciconcursos.com.br/concursos/${uf.toLowerCase()}/`
-    });
-
-    if (editais.length >= 10) break;
+  if (!response.ok) {
+    const errBody = await response.text();
+    throw new Error(`Anthropic error: ${response.status} - ${errBody}`);
   }
 
-  return editais;
+  const data = await response.json();
+  const txt = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+  const m = txt.match(/\{[\s\S]*"editais"[\s\S]*\}/);
+  if (!m) throw new Error('sem JSON na resposta');
+
+  return JSON.parse(m[0]).editais || [];
 }
 
 module.exports = async (req, res) => {
@@ -97,15 +54,18 @@ module.exports = async (req, res) => {
     return res.status(401).json({ error: 'Não autorizado' });
   }
 
+  const apiKey = process.env.ANTHROPIC_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'ANTHROPIC_KEY não configurada' });
+
   const resultados = [];
   const erros = [];
 
-  console.log('Iniciando scraping do PCI Concursos para todos os estados...');
+  console.log('Iniciando atualização de concursos para todos os estados...');
 
   for (const [uf, estado] of Object.entries(UF_ESTADOS)) {
     try {
-      console.log(`Scraping ${uf} - ${estado}...`);
-      const editais = await scrapeConCursosPorUF(uf);
+      console.log(`Buscando ${uf} - ${estado}...`);
+      const editais = await buscarEditaisPorEstado(uf, estado, apiKey);
 
       const { error } = await supabase
         .from('concursos_cache')
@@ -121,8 +81,8 @@ module.exports = async (req, res) => {
       resultados.push({ uf, total: editais.length });
       console.log(`✓ ${uf}: ${editais.length} editais`);
 
-      // Pequena pausa pra não sobrecarregar o servidor
-      await new Promise(r => setTimeout(r, 500));
+      // Pausa entre chamadas pra não sobrecarregar a API
+      await new Promise(r => setTimeout(r, 2000));
 
     } catch (err) {
       console.error(`✗ ${uf}: ${err.message}`);
