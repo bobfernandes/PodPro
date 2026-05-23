@@ -32,7 +32,7 @@ module.exports = async (req, res) => {
     const apiKey = process.env.ANTHROPIC_KEY;
     if (!apiKey) return res.status(500).json({ error: 'Chave não configurada' });
 
-    const prompt = `Pesquise concursos publicos abertos ou previstos para 2025 e 2026 na area de EDUCACAO (professor, pedagogo, orientador, coordenador, diretor) em ${estado}. Responda SOMENTE com JSON valido sem markdown: {"editais":[{"cargo":"string","cidade":"string","banca":"string","vagas":null,"salario":"string","inscricao":"string","status":"Aberto","descricao":"string","link":"string"}]} Maximo 5 editais reais.`;
+    const prompt = `Pesquise concursos publicos abertos ou com inscricoes previstas a partir de 2026 na area de EDUCACAO (professor, pedagogo, orientador, coordenador, diretor) em ${estado}. Responda SOMENTE com JSON valido sem markdown: {"editais":[{"cargo":"string","cidade":"string","banca":"string","vagas":null,"salario":"string","inscricao":"string","status":"Aberto","descricao":"string","link":"string"}]} Maximo 5 editais reais.`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
