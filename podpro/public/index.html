@@ -235,12 +235,11 @@ async function loadConcursos(uf){
     const data=await res.json();
     const editais=data.editais||[];
     if(editais.length===0)throw new Error('vazio');
-    const agora=new Date();
-    const proxima=new Date(agora);
-    proxima.setDate(proxima.getDate()+15);
     const fmt=d=>d.toLocaleDateString('pt-BR');
-    const atuEm=data.atualizado_em?new Date(data.atualizado_em):agora;
-    setState({concursos:editais,cFonte:'live',cLoading:false,cAtualizado:fmt(atuEm),cProxima:fmt(proxima)});
+    const atuEm=data.atualizado_em?new Date(data.atualizado_em):new Date();
+    const proxima=new Date(atuEm);
+    proxima.setDate(proxima.getDate()+15);
+    setState({concursos:editais,cFonte:data.fonte||'live',cLoading:false,cAtualizado:fmt(atuEm),cProxima:fmt(proxima)});
     showToast(editais.length+' concursos ao vivo! 🎯');
   }catch(e){
     setState({concursos:getConcursosBase(uf),cFonte:'base',cLoading:false});
