@@ -7,7 +7,7 @@
   "crons": [
     {
       "path": "/api/atualizar-concursos",
-      "schedule": "0 12 1,23 * *"
+      "schedule": "0 6 1,15 * *"
     }
   ]
 }
