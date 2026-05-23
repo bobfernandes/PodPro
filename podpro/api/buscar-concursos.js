@@ -5,6 +5,70 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 );
 
+const PALAVRAS_EDUCACAO = [
+  'professor', 'professora', 'pedagogo', 'pedagoga', 'orientador',
+  'coordenador', 'diretor de escola', 'supervisor de ensino',
+  'docente', 'educação infantil', 'ensino fundamental', 'ensino médio',
+  'magistério', 'licenciatura'
+];
+
+async function scrapeConCursosPorUF(uf) {
+  const url = `https://www.pciconcursos.com.br/professores/`;
+
+  const response = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept-Language': 'pt-BR,pt;q=0.9',
+    }
+  });
+
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+  const html = await response.text();
+  return parseEditais(html, uf);
+}
+
+function parseEditais(html, ufFiltro) {
+  const editais = [];
+
+  const blocoRegex = /([^·\n]+?)\s*·\s*(AC|AL|AM|AP|BA|CE|DF|ES|GO|MA|MG|MS|MT|PA|PB|PE|PI|PR|RJ|RN|RO|RR|RS|SC|SE|SP|TO)\s*·\s*([^·]+?vagas[^·]*?)\s*·\s*([^·\n]+?)\s*·\s*([\d\/]+(?:\s*a\s*[\d\/]+)?|Prorrogado[^·\n]*)/gi;
+
+  let match;
+  while ((match = blocoRegex.exec(html)) !== null) {
+    const orgao = match[1].trim();
+    const uf = match[2].trim();
+    const vagasInfo = match[3].trim();
+    const cargo = match[4].trim();
+    const inscricao = match[5].trim();
+
+    if (uf !== ufFiltro.toUpperCase()) continue;
+
+    const cargoLower = cargo.toLowerCase();
+    const eEducacao = PALAVRAS_EDUCACAO.some(p => cargoLower.includes(p));
+    if (!eEducacao) continue;
+
+    const vagasMatch = vagasInfo.match(/(\d+)\s*vagas?/i);
+    const salarioMatch = vagasInfo.match(/R\$\s*([\d.,]+)/i);
+
+    editais.push({
+      cargo: cargo.replace(/\s+/g, ' ').trim(),
+      cidade: orgao.replace(/\s+/g, ' ').trim(),
+      banca: 'A confirmar',
+      vagas: vagasMatch ? parseInt(vagasMatch[1]) : null,
+      salario: salarioMatch ? `R$ ${salarioMatch[1]}` : 'A confirmar',
+      inscricao: inscricao.trim(),
+      status: 'Aberto',
+      descricao: `Concurso público em ${uf} para ${cargo}`,
+      link: `https://www.pciconcursos.com.br/concursos/${uf.toLowerCase()}/`
+    });
+
+    if (editais.length >= 10) break;
+  }
+
+  return editais;
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -24,39 +88,15 @@ module.exports = async (req, res) => {
       .single();
 
     if (cache && cache.editais) {
-      const editais = JSON.parse(cache.editais);
+      const editais = typeof cache.editais === 'string'
+        ? JSON.parse(cache.editais)
+        : cache.editais;
       return res.status(200).json({ ok: true, editais, fonte: 'cache', atualizado_em: cache.atualizado_em });
     }
 
-    // Se não tem cache, busca ao vivo
-    const apiKey = process.env.ANTHROPIC_KEY;
-    if (!apiKey) return res.status(500).json({ error: 'Chave não configurada' });
-
-    const prompt = `Pesquise concursos publicos abertos ou previstos para 2025 e 2026 na area de EDUCACAO (professor, pedagogo, orientador, coordenador, diretor) em ${estado}. Responda SOMENTE com JSON valido sem markdown: {"editais":[{"cargo":"string","cidade":"string","banca":"string","vagas":null,"salario":"string","inscricao":"string","status":"Aberto","descricao":"string","link":"string"}]} Maximo 5 editais reais.`;
-
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 2000,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-
-    if (!response.ok) { const errBody = await response.text(); throw new Error(`Anthropic error: ${response.status} - ${errBody}`); }
-
-    const data = await response.json();
-    const txt = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
-    const m = txt.match(/\{[\s\S]*"editais"[\s\S]*\}/);
-    if (!m) throw new Error('sem JSON na resposta');
-
-    const editais = JSON.parse(m[0]).editais || [];
+    // Se não tem cache, faz scraping ao vivo
+    console.log(`Scraping ao vivo para ${uf}...`);
+    const editais = await scrapeConCursosPorUF(uf);
 
     // Salva no cache
     await supabase.from('concursos_cache').upsert({
