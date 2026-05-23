@@ -1,3 +1,10 @@
+const { createClient } = require('@supabase/supabase-js');
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_KEY
+);
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -8,10 +15,23 @@ module.exports = async (req, res) => {
   const { uf, estado } = req.body;
   if (!uf || !estado) return res.status(400).json({ error: 'UF e estado obrigatórios' });
 
-  const apiKey = process.env.ANTHROPIC_KEY;
-  if (!apiKey) return res.status(500).json({ error: 'Chave não configurada' });
-
   try {
+    // Tenta buscar do cache primeiro
+    const { data: cache } = await supabase
+      .from('concursos_cache')
+      .select('editais, atualizado_em')
+      .eq('uf', uf)
+      .single();
+
+    if (cache && cache.editais) {
+      const editais = JSON.parse(cache.editais);
+      return res.status(200).json({ ok: true, editais, fonte: 'cache', atualizado_em: cache.atualizado_em });
+    }
+
+    // Se não tem cache, busca ao vivo
+    const apiKey = process.env.ANTHROPIC_KEY;
+    if (!apiKey) return res.status(500).json({ error: 'Chave não configurada' });
+
     const prompt = `Pesquise concursos publicos abertos ou previstos para 2025 e 2026 na area de EDUCACAO (professor, pedagogo, orientador, coordenador, diretor) em ${estado}. Responda SOMENTE com JSON valido sem markdown: {"editais":[{"cargo":"string","cidade":"string","banca":"string","vagas":null,"salario":"string","inscricao":"string","status":"Aberto","descricao":"string","link":"string"}]} Maximo 5 editais reais.`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -37,7 +57,16 @@ module.exports = async (req, res) => {
     if (!m) throw new Error('sem JSON');
 
     const editais = JSON.parse(m[0]).editais || [];
-    return res.status(200).json({ ok: true, editais });
+
+    // Salva no cache
+    await supabase.from('concursos_cache').upsert({
+      uf, estado,
+      editais: JSON.stringify(editais),
+      atualizado_em: new Date().toISOString()
+    }, { onConflict: 'uf' });
+
+    return res.status(200).json({ ok: true, editais, fonte: 'live' });
+
   } catch (err) {
     console.error('buscar-concursos error:', err);
     return res.status(500).json({ error: err.message });
