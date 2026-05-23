@@ -24,19 +24,8 @@ async function scrapeConCursosPorUF(uf) {
   });
 
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
   const html = await response.text();
-  
-  // LOG: retorna amostra do HTML pra debug
-  console.log('HTML_SAMPLE:', html.substring(0, 2000));
-  console.log('HTML_LENGTH:', html.length);
-  
-  // Testa se tem o padrão esperado
-  const temSP = html.includes('· SP ·');
-  const temProfessor = html.toLowerCase().includes('professor');
-  console.log('TEM_SP_PATTERN:', temSP, '| TEM_PROFESSOR:', temProfessor);
-
-  return parseEditais(html, uf);
+  return { html, editais: parseEditais(html, uf) };
 }
 
 function parseEditais(html, ufFiltro) {
@@ -90,36 +79,41 @@ module.exports = async (req, res) => {
   if (!uf || !estado) return res.status(400).json({ error: 'UF e estado obrigatórios' });
 
   try {
-    // MODO DEBUG: força scraping ao vivo ignorando cache
-    const debug = req.query.debug === '1';
-
-    if (!debug) {
-      const { data: cache } = await supabase
-        .from('concursos_cache')
-        .select('editais, atualizado_em')
-        .eq('uf', uf)
-        .single();
-
-      if (cache && cache.editais) {
-        const editais = typeof cache.editais === 'string'
-          ? JSON.parse(cache.editais)
-          : cache.editais;
-        return res.status(200).json({ ok: true, editais, fonte: 'cache', atualizado_em: cache.atualizado_em });
-      }
+    // Modo debug: retorna amostra do HTML pra diagnóstico
+    if (req.query.debug === '1') {
+      const { html, editais } = await scrapeConCursosPorUF(uf);
+      return res.status(200).json({
+        total: editais.length,
+        editais,
+        html_amostra: html.substring(0, 3000),
+        tem_uf: html.includes(`· ${uf} ·`),
+        tem_professor: html.toLowerCase().includes('professor'),
+      });
     }
 
-    console.log(`Scraping ao vivo para ${uf}...`);
-    const editais = await scrapeConCursosPorUF(uf);
+    // Fluxo normal: cache primeiro
+    const { data: cache } = await supabase
+      .from('concursos_cache')
+      .select('editais, atualizado_em')
+      .eq('uf', uf)
+      .single();
 
-    if (!debug) {
-      await supabase.from('concursos_cache').upsert({
-        uf, estado,
-        editais: JSON.stringify(editais),
-        atualizado_em: new Date().toISOString()
-      }, { onConflict: 'uf' });
+    if (cache && cache.editais) {
+      const editais = typeof cache.editais === 'string'
+        ? JSON.parse(cache.editais)
+        : cache.editais;
+      return res.status(200).json({ ok: true, editais, fonte: 'cache', atualizado_em: cache.atualizado_em });
     }
 
-    return res.status(200).json({ ok: true, editais, fonte: debug ? 'debug-live' : 'live', total: editais.length });
+    const { editais } = await scrapeConCursosPorUF(uf);
+
+    await supabase.from('concursos_cache').upsert({
+      uf, estado,
+      editais: JSON.stringify(editais),
+      atualizado_em: new Date().toISOString()
+    }, { onConflict: 'uf' });
+
+    return res.status(200).json({ ok: true, editais, fonte: 'live' });
 
   } catch (err) {
     console.error('buscar-concursos error:', err);
