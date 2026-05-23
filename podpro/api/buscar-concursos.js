@@ -42,19 +42,19 @@ module.exports = async (req, res) => {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2000,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         messages: [{ role: 'user', content: prompt }]
       })
     });
 
-    if (!response.ok) throw new Error(`Anthropic error: ${response.status}`);
+    if (!response.ok) { const errBody = await response.text(); throw new Error(`Anthropic error: ${response.status} - ${errBody}`); }
 
     const data = await response.json();
     const txt = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
     const m = txt.match(/\{[\s\S]*"editais"[\s\S]*\}/);
-    if (!m) throw new Error('sem JSON');
+    if (!m) throw new Error('sem JSON na resposta');
 
     const editais = JSON.parse(m[0]).editais || [];
 
