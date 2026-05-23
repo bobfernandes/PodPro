@@ -66,7 +66,7 @@ select.inp{appearance:none;-webkit-appearance:none}
 <script>
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
 const API_BASE = window.location.origin;
-const ANTHROPIC_API_KEY = "COLE_SUA_CHAVE_ANTHROPIC_AQUI";
+const ANTHROPIC_API_KEY = "C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";
 
 const UF = {AC:"Acre",AL:"Alagoas",AM:"Amazonas",AP:"Amapá",BA:"Bahia",CE:"Ceará",DF:"Distrito Federal",ES:"Espírito Santo",GO:"Goiás",MA:"Maranhão",MG:"Minas Gerais",MS:"Mato Grosso do Sul",MT:"Mato Grosso",PA:"Pará",PB:"Paraíba",PE:"Pernambuco",PI:"Piauí",PR:"Paraná",RJ:"Rio de Janeiro",RN:"Rio Grande do Norte",RO:"Rondônia",RR:"Roraima",RS:"Rio Grande do Sul",SC:"Santa Catarina",SE:"Sergipe",SP:"São Paulo",TO:"Tocantins"};
 
@@ -228,9 +228,14 @@ async function assinarPRO(uid,email,nome){
 // ─── CONCURSOS ────────────────────────────────────────────────────────────────
 async function loadConcursos(uf){
   setState({cLoading:true,concursos:[]});
+  // Se a chave Anthropic não foi configurada, usa base curada direto
+  if(!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY.includes('COLE_SUA')){
+    setState({concursos:getConcursosBase(uf),cFonte:"base",cLoading:false});
+    return;
+  }
   try{
     const estado=UF[uf];
-    const prompt='Pesquise concursos públicos abertos ou previstos para 2025 e 2026 na área de EDUCAÇÃO (professor, pedagogo, orientador, coordenador, diretor) em '+estado+'. Responda SOMENTE com JSON válido sem markdown:\n{"editais":[{"cargo":"string","cidade":"string","banca":"string","vagas":null,"salario":"string","inscricao":"string","status":"Aberto","descricao":"string","link":"string"}]}\nMáximo 5 editais reais.';
+    const prompt='Pesquise concursos publicos abertos ou previstos para 2025 e 2026 na area de EDUCACAO (professor, pedagogo, orientador, coordenador, diretor) em '+estado+'. Responda SOMENTE com JSON valido sem markdown: {"editais":[{"cargo":"string","cidade":"string","banca":"string","vagas":null,"salario":"string","inscricao":"string","status":"Aberto","descricao":"string","link":"string"}]} Maximo 5 editais reais.';
     const res=await fetch("https://api.anthropic.com/v1/messages",{
       method:"POST",
       headers:{"Content-Type":"application/json","x-api-key":ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
@@ -249,7 +254,6 @@ async function loadConcursos(uf){
     setState({concursos:getConcursosBase(uf),cFonte:"base",cLoading:false});
   }
 }
-
 // ─── STATE ────────────────────────────────────────────────────────────────────
 const state={
   scr:"auth",aMode:"login",aLoading:false,
