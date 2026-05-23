@@ -26,30 +26,28 @@ async function buscarEditaisPorEstado(uf, estado, apiKey) {
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 2000,
+      model: 'claude-sonnet-4-5',
+      max_tokens: 1000,
       tools: [{ type: 'web_search_20250305', name: 'web_search' }],
       messages: [{ role: 'user', content: prompt }]
     })
   });
 
-  if (!response.ok) {
-    const errBody = await response.text();
-    throw new Error(`Anthropic error: ${response.status} - ${errBody}`);
-  }
+  if (!response.ok) throw new Error(`Anthropic error: ${response.status}`);
 
   const data = await response.json();
   const txt = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
   const m = txt.match(/\{[\s\S]*"editais"[\s\S]*\}/);
-  if (!m) throw new Error('sem JSON na resposta');
+  if (!m) throw new Error('sem JSON');
 
   return JSON.parse(m[0]).editais || [];
 }
 
 module.exports = async (req, res) => {
+  // Verifica se é chamada do cron do Vercel ou manual com senha
   const authHeader = req.headers.authorization;
   const cronSecret = process.env.CRON_SECRET || 'podpro-cron-2026';
-
+  
   if (authHeader !== `Bearer ${cronSecret}`) {
     return res.status(401).json({ error: 'Não autorizado' });
   }
@@ -67,6 +65,7 @@ module.exports = async (req, res) => {
       console.log(`Buscando ${uf} - ${estado}...`);
       const editais = await buscarEditaisPorEstado(uf, estado, apiKey);
 
+      // Salva/atualiza no Supabase
       const { error } = await supabase
         .from('concursos_cache')
         .upsert({
@@ -81,7 +80,7 @@ module.exports = async (req, res) => {
       resultados.push({ uf, total: editais.length });
       console.log(`✓ ${uf}: ${editais.length} editais`);
 
-      // Pausa entre chamadas pra não sobrecarregar a API
+      // Aguarda 2s entre chamadas pra não sobrecarregar a API
       await new Promise(r => setTimeout(r, 2000));
 
     } catch (err) {
