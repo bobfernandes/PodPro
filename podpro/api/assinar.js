@@ -1,9 +1,17 @@
+// api/assinar.js
+// Cria preferência de pagamento no Mercado Pago para o plano escolhido
 const { createClient } = require('@supabase/supabase-js');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_KEY
 );
+
+const PLANOS = {
+  libaneo:  { nome: 'Plano Libâneo',  valor: 7.97  },
+  vygotsky: { nome: 'Plano Vygotsky', valor: 17.97 },
+  piaget:   { nome: 'Plano Piaget',   valor: 27.97 },
+};
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -12,70 +20,76 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido' });
 
-  const { usuario_id, email, nome } = req.body;
-  if (!usuario_id || !email) return res.status(400).json({ error: 'Dados inválidos.' });
+  const { usuario_id, email, nome, plano, valor } = req.body;
+
+  if (!usuario_id || !email || !plano) {
+    return res.status(400).json({ error: 'usuario_id, email e plano são obrigatórios' });
+  }
+
+  const planInfo = PLANOS[plano];
+  if (!planInfo) {
+    return res.status(400).json({ error: 'Plano inválido. Use: libaneo, vygotsky ou piaget' });
+  }
+
+  // Valor final: usa o passado pelo cliente ou o cadastrado no servidor (servidor vence)
+  const valorFinal = planInfo.valor;
 
   try {
-    // Cria plano de assinatura no Mercado Pago (preapproval_plan)
-    const planRes = await fetch('https://api.mercadopago.com/preapproval_plan', {
+    // Referência externa: identifica usuário e plano no webhook
+    const externalReference = JSON.stringify({ usuario_id, plano });
+
+    const preferenceBody = {
+      items: [{
+        title: planInfo.nome + ' – PodPrô',
+        description: 'Acesso mensal ao ' + planInfo.nome + ' no PodPrô',
+        quantity: 1,
+        currency_id: 'BRL',
+        unit_price: valorFinal,
+      }],
+      payer: { email },
+      external_reference: externalReference,
+      back_urls: {
+        success: `${process.env.APP_URL || req.headers.origin}?assinatura=sucesso&plano=${plano}`,
+        failure: `${process.env.APP_URL || req.headers.origin}?assinatura=falha`,
+        pending: `${process.env.APP_URL || req.headers.origin}?assinatura=pendente`,
+      },
+      auto_return: 'approved',
+      notification_url: `${process.env.APP_URL || req.headers.origin}/api/webhook-mp`,
+      statement_descriptor: 'PODPRO',
+    };
+
+    const mpResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.MP_ACCESS_TOKEN}`
+        Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`,
       },
-      body: JSON.stringify({
-        reason: 'PodPrô – Assinatura PRO',
-        auto_recurring: {
-          frequency: 1,
-          frequency_type: 'months',
-          transaction_amount: 19.90,
-          currency_id: 'BRL'
-        },
-        payment_methods_allowed: {
-          payment_types: [{ id: 'credit_card' }, { id: 'debit_card' }]
-        },
-        back_url: `${req.headers.origin || 'https://podpro.vercel.app'}/public/index.html?assinatura=sucesso`
-      })
+      body: JSON.stringify(preferenceBody),
     });
 
-    const plan = await planRes.json();
-    if (!plan.id) throw new Error(plan.message || 'Erro ao criar plano');
+    const mpData = await mpResponse.json();
 
-    // Cria link de assinatura (preapproval)
-    const subRes = await fetch('https://api.mercadopago.com/preapproval', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.MP_ACCESS_TOKEN}`
-      },
-      body: JSON.stringify({
-        preapproval_plan_id: plan.id,
-        reason: 'PodPrô – Assinatura PRO',
-        payer_email: email,
-        auto_recurring: {
-          frequency: 1,
-          frequency_type: 'months',
-          transaction_amount: 19.90,
-          currency_id: 'BRL'
-        },
-        back_url: `${req.headers.origin || 'https://podpro.vercel.app'}/public/index.html?assinatura=sucesso`,
-        notification_url: `${req.headers.origin || 'https://podpro.vercel.app'}/api/webhook-mp`
-      })
-    });
+    if (!mpResponse.ok) {
+      console.error('MP error:', mpData);
+      return res.status(500).json({ error: 'Erro ao criar preferência no Mercado Pago' });
+    }
 
-    const sub = await subRes.json();
-    if (!sub.id) throw new Error(sub.message || 'Erro ao criar assinatura');
-
-    // Salva no Supabase
-    await supabase.from('assinaturas').insert({
+    // Registrar tentativa de pagamento
+    await supabase.from('pagamentos').insert({
       usuario_id,
-      mp_preapproval_id: sub.id,
-      status: 'pending'
+      plano,
+      mp_status: 'pending',
+      valor: valorFinal,
     });
 
-    return res.status(200).json({ ok: true, init_point: sub.init_point });
+    return res.status(200).json({
+      ok: true,
+      init_point: mpData.init_point,
+      sandbox_init_point: mpData.sandbox_init_point,
+    });
+
   } catch (err) {
-    console.error(err);
+    console.error('assinar error:', err);
     return res.status(500).json({ error: err.message });
   }
 };
