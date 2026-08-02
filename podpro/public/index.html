@@ -222,6 +222,14 @@ select.inp { appearance:none; -webkit-appearance:none; }
 #_themeToggle:hover { transform:translateY(-2px) }
 .dark .auth-blob-1{background:rgba(212,32,122,.22)}.dark .auth-blob-2{background:rgba(200,139,10,.18)}.dark .auth-blob-3{background:rgba(196,82,26,.14)}
 
+
+.nav-btn{background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 10px;opacity:.4;transition:opacity .2s,transform .2s}
+.nav-btn.active{opacity:1;transform:translateY(-1px)}
+.nav-ic{width:42px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:21px;transition:all .25s}
+.nav-btn.active .nav-ic{background:linear-gradient(135deg,rgba(212,32,122,.2),rgba(200,139,10,.1));box-shadow:0 0 14px rgba(212,32,122,.28)}
+.nav-btn .lb{font-size:9px;font-weight:800;color:var(--text-muted);letter-spacing:.5px;text-transform:uppercase;transition:color .2s}
+.nav-btn.active .lb{color:var(--pink)}
+
 /* ══ Nav active glow ═════════════════════════════════════════════════════ */
 .nav-btn.active .ic { filter:drop-shadow(0 0 5px var(--pink)); }
 .nav-btn { transition:opacity .2s, transform .15s; }
@@ -684,14 +692,18 @@ function renderScreen(){
 
 function renderNav(active){
   const items=[
-    {id:"home",ic:"🏠",lb:"Início"},
-    {id:"quiz",ic:"🧠",lb:"Quiz"},
-    {id:"planos",ic:"💎",lb:"Planos"},
-    {id:"vagas",ic:"📡",lb:"Radar"},
-    {id:"perfil",ic:"👤",lb:"Perfil"},
+    {id:"home",  ic:"🏠", lb:"Início"},
+    {id:"quiz",  ic:"🧠", lb:"Quiz"},
+    {id:"planos",ic:"💎", lb:"Planos"},
+    {id:"vagas", ic:"📡", lb:"Radar"},
+    {id:"perfil",ic:"👤", lb:"Perfil"},
   ];
-  return'<nav class="nav">'+items.map(i=>'<button class="nav-btn '+(active===i.id?"active":"")+'" data-nav="'+i.id+'"><span class="ic">'+i.ic+'</span><span class="lb">'+i.lb+'</span></button>').join("")+'</nav>';
+  return'<nav class="nav">'+items.map(i=>'<button class="nav-btn '+(active===i.id?"active":"")+'" data-nav="'+i.id+'">'
+    +'<div class="nav-ic">'+i.ic+'</div>'
+    +'<span class="lb">'+i.lb+'</span>'
+  +'</button>').join("")+'</nav>';
 }
+
 
 function renderAuth(){
   const showPwd=state._showPwd||false;
@@ -747,9 +759,7 @@ function renderAuth(){
 function renderHome(){
   const uf=state.user?state.user.uf:"SP";
   const p=PLANOS[state.plano]||PLANOS.ferreiro;
-
-  // Feature card definitions with accent colors
-  const featureCards=[
+  const cards=[
     {ic:"📡",lb:"Radar",sub:"Editais por estado",id:"vagas",req:"libaneo",color:"#C4521A"},
     {ic:"🧠",lb:"Quiz",sub:"Por banca",id:"quiz",req:"ferreiro",color:"#1B3A6B"},
     {ic:"📋",lb:"Trilha",sub:"Seus estudos",id:"tarefas",req:"ferreiro",color:"#4E7A2F"},
@@ -758,77 +768,73 @@ function renderHome(){
   ];
 
   return'<div class="screen fade-up">'
-
-    // ── Greeting ──
+    // Header
     +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
       +'<div>'
         +'<p style="color:var(--text-muted);font-size:13px;font-weight:600">Olá, '+(state.user?state.user.nome.split(" ")[0]:"")+'  👋</p>'
-        +'<h2 style="font-size:24px;font-weight:900;background:linear-gradient(120deg,var(--text) 30%,var(--pink) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.2">Meu PodPrô</h2>'
+        +'<h2 style="font-size:26px;font-weight:900;background:linear-gradient(120deg,var(--text) 20%,var(--pink) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Meu PodPrô</h2>'
       +'</div>'
-      +'<button id="btnPlanoBadge" style="display:flex;align-items:center;gap:6px;background:linear-gradient(135deg,'+p.cor+'25,'+p.cor+'0a);color:'+p.cor+';padding:7px 14px;font-size:11px;font-weight:900;border-radius:20px;border:1.5px solid '+p.cor+'50;cursor:pointer;font-family:Nunito,sans-serif">'+p.emoji+' '+p.nome+'</button>'
+      +'<button id="btnPlanoBadge" style="background:linear-gradient(135deg,'+p.cor+'30,'+p.cor+'10);color:'+p.cor+';padding:8px 16px;font-size:11px;font-weight:900;border-radius:50px;border:1.5px solid '+p.cor+'50;cursor:pointer;font-family:Nunito,sans-serif;box-shadow:0 4px 14px '+p.cor+'25">'+p.emoji+' '+p.nome+'</button>'
     +'</div>'
 
-    // ── Monitoring hero card ──
-    +'<div class="card" style="margin-bottom:18px;padding:0;overflow:hidden;border:none">'
-      +'<div style="background:linear-gradient(135deg,'+p.cor+'33 0%,'+p.cor+'08 100%);padding:16px 18px;border-bottom:1px solid '+p.cor+'22;display:flex;align-items:center;gap:12px">'
-        +'<div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,'+p.cor+','+p.cor+'99);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📡</div>'
-        +'<div style="flex:1">'
-          +'<p style="font-size:10px;color:'+p.cor+';font-weight:900;letter-spacing:1px">MONITORANDO</p>'
-          +'<p style="font-size:17px;font-weight:900;color:var(--text)">'+(UF[uf]||uf)+'</p>'
-        +'</div>'
-        +(state.cAtualizado
-          ?'<div style="text-align:right"><p style="font-size:9px;color:var(--text-muted)">Atualizado em</p><p style="font-size:12px;font-weight:800;color:var(--text)">'+state.cAtualizado+'</p></div>'
-          :state.cLoading?'<span class="spin" style="color:'+p.cor+';font-size:22px">↻</span>':'')
+    // Monitoring hero
+    +'<div style="background:linear-gradient(135deg,'+p.cor+'28 0%,'+p.cor+'08 100%);border:1.5px solid '+p.cor+'30;border-radius:20px;padding:16px 18px;margin-bottom:18px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 20px '+p.cor+'15;backdrop-filter:blur(12px)">'
+      +'<div style="width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,'+p.cor+','+p.cor+'90);display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 18px '+p.cor+'45;flex-shrink:0">📡</div>'
+      +'<div style="flex:1">'
+        +'<p style="font-size:10px;color:'+p.cor+';font-weight:900;letter-spacing:1.2px">MONITORANDO</p>'
+        +'<p style="font-size:18px;font-weight:900;color:var(--text)">'+(UF[uf]||uf)+'</p>'
       +'</div>'
+      +(state.cAtualizado?'<div style="text-align:right;background:rgba(255,255,255,.15);border-radius:10px;padding:6px 10px"><p style="font-size:9px;color:'+p.cor+';font-weight:700">Atualizado</p><p style="font-size:12px;font-weight:800;color:var(--text)">'+state.cAtualizado+'</p></div>':state.cLoading?'<span class="spin" style="color:'+p.cor+';font-size:22px">↻</span>':'')
     +'</div>'
 
-    // ── Feature grid ──
-    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:22px">'
-    +featureCards.map(c=>{
+    // Feature grid
+    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px">'
+    +cards.map(c=>{
       const locked=!hasAccess(c.req);
       const pc=PLANOS[c.req];
       return'<button class="btn" data-nav="'+c.id+'" style="'
-        +'position:relative;border-radius:18px;padding:14px 10px 12px;text-align:center;'
-        +'background:'+(locked?'rgba(61,26,5,.04)':'linear-gradient(145deg,'+c.color+'1a,'+c.color+'06)')+';'
-        +'border:1.5px solid '+(locked?'rgba(61,26,5,.07)':c.color+'30')+';'
-        +'cursor:pointer;font-family:Nunito,sans-serif;'
-        +'box-shadow:'+(locked?'none':'0 4px 16px '+c.color+'1a')+';'
-        +'transition:transform .18s,box-shadow .18s">'
-        +(locked?'<div style="position:absolute;top:5px;right:5px;background:'+pc.cor+';color:#fff;border-radius:8px;padding:1px 5px;font-size:8px;font-weight:900">'+pc.nome.slice(0,3).toUpperCase()+'</div>':'')
-        +'<div style="font-size:24px;margin-bottom:6px;'+(locked?'opacity:.3':'')+'">'+c.ic+'</div>'
-        +'<div style="font-size:12px;font-weight:900;color:'+(locked?'var(--text-muted)':c.color)+';line-height:1.2">'+c.lb+'</div>'
+        +'position:relative;border-radius:18px;padding:16px 10px 14px;text-align:center;'
+        +'background:'+(locked?'rgba(61,26,5,.04)':'linear-gradient(145deg,'+c.color+'20,'+c.color+'06)')+';'
+        +'border:1.5px solid '+(locked?'rgba(61,26,5,.06)':c.color+'28')+';'
+        +'box-shadow:'+(locked?'none':'0 4px 18px '+c.color+'18')+';'
+        +'backdrop-filter:blur(10px);cursor:pointer;font-family:Nunito,sans-serif;transition:transform .2s,box-shadow .2s">'
+        // lock badge
+        +(locked?'<div style="position:absolute;top:6px;right:6px;background:'+pc.cor+';color:#fff;border-radius:8px;padding:2px 6px;font-size:8px;font-weight:900">'+pc.nome.slice(0,3).toUpperCase()+'</div>':'')
+        // icon circle
+        +'<div style="width:46px;height:46px;border-radius:50%;background:'+(locked?'rgba(61,26,5,.08)':'linear-gradient(135deg,'+c.color+','+c.color+'88)')+';'
+          +'display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 10px;'
+          +'box-shadow:'+(locked?'none':'0 6px 18px '+c.color+'40')+'">'+c.ic+'</div>'
+        +'<div style="font-size:13px;font-weight:900;color:'+(locked?'var(--text-muted)':c.color)+'">'+c.lb+'</div>'
         +'<div style="font-size:10px;color:var(--text-muted);margin-top:2px;line-height:1.3">'+c.sub+'</div>'
-        +(locked?'':'<div style="position:absolute;bottom:0;left:10px;right:10px;height:2.5px;border-radius:4px;background:linear-gradient(90deg,transparent,'+c.color+',transparent)"></div>')
+        +(locked?'':'<div style="position:absolute;bottom:0;left:12px;right:12px;height:2.5px;border-radius:4px;background:linear-gradient(90deg,transparent,'+c.color+',transparent)"></div>')
       +'</button>';
     }).join("")
     +'</div>'
 
-    // ── Latest editais section ──
+    // Section title
     +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">'
-      +'<div style="width:4px;height:18px;border-radius:4px;background:linear-gradient(var(--pink),#C88B0A)"></div>'
-      +'<h3 style="font-weight:900;color:var(--text);font-size:15px">Últimos editais</h3>'
-      +(state.concursos.length?'<span class="chip">'+state.concursos.length+'</span>':'')
+      +'<div style="width:4px;height:20px;border-radius:4px;background:linear-gradient(180deg,var(--pink),#C88B0A)"></div>'
+      +'<h3 style="font-weight:900;color:var(--text);font-size:16px">Últimos editais</h3>'
+      +(state.concursos.length?'<span class="chip" style="margin-left:4px">'+state.concursos.length+'</span>':'')
     +'</div>'
 
     +(hasAccess('libaneo')
       ?(state.cLoading
-        ?'<div style="text-align:center;padding:28px 0"><div class="loader spin" style="margin:0 auto"></div></div>'
-        :'<div style="display:flex;flex-direction:column;gap:10px">'
-          +state.concursos.slice(0,3).map((v,i)=>'<button class="btn card" data-vaga="'+i+'" style="padding:14px 16px;text-align:left;width:100%">'
-            +'<div style="display:flex;justify-content:space-between;align-items:flex-start">'
-              +'<div style="flex:1;padding-right:8px">'
-                +'<p style="font-weight:800;font-size:14px;line-height:1.4;color:var(--text)">'+v.cargo+'</p>'
-                +'<p style="color:var(--text-muted);font-size:12px;margin-top:2px">📍 '+v.cidade+'</p>'
-              +'</div>'+statusTag(v.status)
+        ?'<div style="text-align:center;padding:32px 0"><div class="loader spin" style="margin:0 auto;width:36px;height:36px"></div></div>'
+        :'<div style="display:flex;flex-direction:column;gap:10px">'+state.concursos.slice(0,3).map((v,i)=>
+          '<button class="btn card" data-vaga="'+i+'" style="padding:16px;text-align:left;width:100%">'
+            +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">'
+              +'<div style="flex:1"><p style="font-weight:800;font-size:14px;line-height:1.4;color:var(--text)">'+v.cargo+'</p>'
+              +'<p style="color:var(--text-muted);font-size:12px;margin-top:3px">📍 '+v.cidade+'</p></div>'
+              +statusTag(v.status)
             +'</div>'
-            +'<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">'+chip(v.banca?"🏦 "+v.banca:"")+chip(v.vagas?"👥 "+v.vagas+" vagas":"")+chip(v.salario?"💰 "+v.salario:"")+'</div>'
-          +'</button>').join("")
-        +'</div>')
-      :'<div class="card" style="padding:24px;text-align:center;border:2px dashed rgba(196,82,26,.25)">'
-        +'<div style="font-size:36px;margin-bottom:10px">📡</div>'
-        +'<p style="font-weight:900;color:var(--text);margin-bottom:6px;font-size:15px">Radar dos Concursos</p>'
-        +'<p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;line-height:1.6">Acompanhe editais do seu estado em tempo real</p>'
-        +'<button class="btn btn-pink" id="btnUpgradeLibaneo" style="padding:12px 24px;font-size:14px">Assinar Libâneo – R$ 7,97/mês</button>'
+            +'<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">'+chip(v.banca?"🏦 "+v.banca:"")+chip(v.vagas?"👥 "+v.vagas:"")+chip(v.salario?"💰 "+v.salario:"")+'</div>'
+          +'</button>').join("")+'</div>')
+      :'<div class="card" style="padding:28px 22px;text-align:center;border:2px dashed rgba(196,82,26,.22);background:linear-gradient(145deg,rgba(196,82,26,.06),rgba(212,32,122,.03))">'
+        +'<div style="font-size:42px;margin-bottom:12px">📡</div>'
+        +'<p style="font-weight:900;color:var(--text);margin-bottom:6px;font-size:16px">Radar dos Concursos</p>'
+        +'<p style="color:var(--text-muted);font-size:13px;margin-bottom:18px;line-height:1.6">Acompanhe editais do seu estado em tempo real</p>'
+        +'<button class="btn btn-pink" id="btnUpgradeLibaneo" style="padding:13px 26px;font-size:14px">Assinar Libâneo – R$ 7,97/mês</button>'
       +'</div>'
     )
   +'</div>'+renderNav("home");
@@ -846,7 +852,50 @@ function renderVagas(){
 }
 
 function renderQuizMenu(){
-  return'<div class="screen fade-up"><h2 style="font-size:24px;font-weight:900;margin-bottom:4px;color:#3D1A05">🧠 Quiz por Banca</h2><p style="color:var(--text-sec);font-size:14px;margin-bottom:20px">'+Object.keys(QUIZ_BANCAS).length+' bancas · '+Object.values(QUIZ_BANCAS).reduce((a,b)=>a+b.questoes.length,0)+' questões</p>'+(state.qHistory.length>0?'<div class="card" style="padding:14px 18px;margin-bottom:18px"><p style="font-weight:800;font-size:13px;margin-bottom:8px;color:#3D1A05">📊 Últimos resultados</p>'+state.qHistory.slice(0,3).map((h,i)=>'<div style="display:flex;justify-content:space-between;padding:5px 0;'+(i<2?"border-bottom:1px solid var(--border)":"")+'""><span style="font-size:13px;color:#3D1A05">🏦 '+h.banca+'</span><span style="font-size:13px;color:'+(h.score/h.total>=.7?"#16a34a":"#D97706")+';font-weight:700">'+h.score+'/'+h.total+' · '+h.data+'</span></div>').join("")+'</div>':"")+'<div style="display:flex;flex-direction:column;gap:12px">'+Object.entries(QUIZ_BANCAS).map(([key,b])=>'<button class="btn card" data-glow data-banca="'+key+'" style="padding:18px;text-align:left;width:100%;border-radius:18px;border-left:4px solid '+b.cor+';--base:'+bancaHue(b.cor)+'"><div style="display:flex;justify-content:space-between;align-items:center"><div><p style="font-weight:900;font-size:16px;color:#3D1A05">'+key+'</p><p style="color:var(--text-sec);font-size:12px;margin-top:2px">'+b.descricao+'</p></div><div style="text-align:right"><p style="color:'+b.cor+';font-weight:800;font-size:14px">'+b.questoes.length+'Q</p><p style="color:var(--text-muted);font-size:11px;margin-top:2px">'+(state.qHistory.find(h=>h.banca===key)?"Melhor: "+Math.max(...state.qHistory.filter(h=>h.banca===key).map(h=>h.score))+"/"+b.questoes.length:"Não jogado")+'</p></div></div></button>').join("")+'</div></div>'+renderNav("quiz");
+  return'<div class="screen fade-up">'
+    +'<div style="margin-bottom:20px">'
+      +'<h2 style="font-size:26px;font-weight:900;background:linear-gradient(120deg,var(--text) 20%,#1B3A6B 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">🧠 Quiz por Banca</h2>'
+      +'<p style="color:var(--text-muted);font-size:13px;margin-top:4px">'+Object.keys(QUIZ_BANCAS).length+' bancas · '+Object.values(QUIZ_BANCAS).reduce((a,b)=>a+b.questoes.length,0)+' questões</p>'
+    +'</div>'
+
+    +(state.qHistory.length?'<div class="card" style="padding:16px 18px;margin-bottom:18px;background:linear-gradient(135deg,rgba(27,58,107,.12),rgba(27,58,107,.04));border-color:rgba(27,58,107,.2)">'
+      +'<p style="font-weight:900;font-size:13px;margin-bottom:10px;color:var(--text)">📊 Últimos resultados</p>'
+      +state.qHistory.slice(0,3).map((h,i)=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;'+(i<2?'border-bottom:1px solid var(--border)':'')+'">'
+        +'<span style="font-size:13px;font-weight:700;color:var(--text)">🏦 '+h.banca+'</span>'
+        +'<div style="display:flex;align-items:center;gap:8px">'
+          +'<div style="background:'+(h.score/h.total>=.7?'rgba(22,163,74,.15)':'rgba(217,119,6,.15)')+';color:'+(h.score/h.total>=.7?'#16a34a':'#D97706')+';border-radius:20px;padding:3px 10px;font-size:12px;font-weight:800">'+h.score+'/'+h.total+'</div>'
+          +'<span style="color:var(--text-muted);font-size:11px">'+h.data+'</span>'
+        +'</div>'
+      +'</div>').join("")
+    +'</div>':"")
+
+    +'<div style="display:flex;flex-direction:column;gap:12px">'
+    +Object.entries(QUIZ_BANCAS).map(([key,b])=>{
+      const bestScore=state.qHistory.filter(h=>h.banca===key);
+      const best=bestScore.length?Math.max(...bestScore.map(h=>Math.round(h.score/h.total*100))):null;
+      return'<button class="btn" data-banca="'+key+'" style="'
+        +'padding:18px;text-align:left;width:100%;border-radius:20px;'
+        +'background:linear-gradient(145deg,'+b.cor+'18,'+b.cor+'05);'
+        +'border:1.5px solid '+b.cor+'28;'
+        +'box-shadow:0 4px 20px '+b.cor+'15;'
+        +'backdrop-filter:blur(10px);font-family:Nunito,sans-serif;cursor:pointer;transition:transform .2s,box-shadow .2s">'
+        +'<div style="display:flex;align-items:center;gap:14px">'
+          +'<div style="width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,'+b.cor+','+b.cor+'AA);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#fff;box-shadow:0 6px 20px '+b.cor+'45;flex-shrink:0">'+key.slice(0,2)+'</div>'
+          +'<div style="flex:1">'
+            +'<p style="font-weight:900;font-size:16px;color:var(--text)">'+key+'</p>'
+            +'<p style="color:var(--text-muted);font-size:12px;margin-top:2px;line-height:1.4">'+b.descricao+'</p>'
+          +'</div>'
+          +'<div style="text-align:right;flex-shrink:0">'
+            +'<p style="color:'+b.cor+';font-weight:900;font-size:22px;line-height:1">'+b.questoes.length+'</p>'
+            +'<p style="color:var(--text-muted);font-size:10px">questões</p>'
+            +(best!==null?'<p style="color:'+(best>=70?'#16a34a':'#D97706')+';font-size:11px;font-weight:800;margin-top:3px">melhor '+best+'%</p>':'')
+          +'</div>'
+        +'</div>'
+        +'<div style="height:3px;border-radius:4px;background:linear-gradient(90deg,'+b.cor+'60,'+b.cor+'20,transparent);margin-top:14px"></div>'
+      +'</button>';
+    }).join("")
+    +'</div>'
+  +'</div>'+renderNav("quiz");
 }
 
 function renderQuizJogo(){
@@ -871,7 +920,43 @@ function renderTarefas(){
   const filtradas=state.tasks.filter(t=>state.filtroTask==="todas"?true:state.filtroTask==="pendentes"?!t.feita:t.feita);
   const pendentes=state.tasks.filter(t=>!t.feita).length;
   const feitas=state.tasks.filter(t=>t.feita).length;
-  return'<div class="screen fade-up"><h2 style="font-size:24px;font-weight:900;margin-bottom:2px;color:#3D1A05">✅ Trilha de Estudos</h2><p style="color:var(--text-sec);font-size:14px;margin-bottom:16px">Organize sua preparação para o concurso</p><div class="card" style="padding:14px 20px;margin-bottom:16px;display:flex;justify-content:space-around">'+[{lb:"Pendentes",val:pendentes,c:"#D4207A"},{lb:"Concluídas",val:feitas,c:"#16a34a"},{lb:"Total",val:state.tasks.length,c:"#3D1A05"}].map(s=>'<div style="text-align:center"><p style="color:var(--text-sec);font-size:11px">'+s.lb+'</p><p style="font-size:24px;font-weight:900;color:'+s.c+'">'+s.val+'</p></div>').join("")+'</div><div style="display:flex;gap:8px;margin-bottom:16px"><input class="inp" id="novaTask" placeholder="Nova tarefa de estudo…" style="border-radius:50px;flex:1"/><button class="btn btn-pink" id="btnAddTask" style="padding:0 20px;font-size:22px;border-radius:50px;flex-shrink:0;min-width:48px">+</button></div><div style="display:flex;gap:8px;margin-bottom:16px">'+["todas","pendentes","feitas"].map(f=>'<button class="btn '+(state.filtroTask===f?"btn-pink":"btn-ghost")+'" data-filtro="'+f+'" style="padding:7px 16px;font-size:13px;'+(state.filtroTask!==f?'color:var(--text)':'')+'" >'+f.charAt(0).toUpperCase()+f.slice(1)+'</button>').join("")+'</div>'+(filtradas.length===0?'<div style="text-align:center;padding:40px 0;color:var(--text-muted)"><span style="font-size:46px">'+(state.filtroTask==="feitas"?"🏆":"📝")+'</span><p style="margin-top:12px;font-size:14px">'+(state.filtroTask==="feitas"?"Nenhuma tarefa concluída ainda.":state.filtroTask==="pendentes"?"Nenhuma tarefa pendente. Ótimo!":"Adicione sua primeira tarefa acima!")+'</p></div>':"")+'<div style="display:flex;flex-direction:column;gap:8px">'+filtradas.map(t=>'<div class="card task-item" style="opacity:'+(t.feita?.65:1)+'"><button class="task-check '+(t.feita?"done":"")+'" data-taskid="'+t.id+'">'+(t.feita?"✓":"")+'</button><p style="flex:1;font-size:14px;font-weight:600;text-decoration:'+(t.feita?"line-through":"none")+';color:'+(t.feita?"rgba(61,26,5,.4)":"#3D1A05")+';line-height:1.4">'+t.texto+'</p><button class="btn" data-deltask="'+t.id+'" style="background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.2);color:#c0392b;padding:5px 12px;font-size:12px;border-radius:20px">✕</button></div>').join("")+'</div>'+(feitas>0?'<button class="btn btn-danger" id="btnClearDone" style="width:100%;padding:13px;font-size:14px;margin-top:16px;border-radius:20px">🗑 Limpar concluídas ('+feitas+')</button>':"")+'</div>'+renderNav("quiz");
+  const pct=state.tasks.length?Math.round(feitas/state.tasks.length*100):0;
+
+  return'<div class="screen fade-up">'
+    +'<h2 style="font-size:26px;font-weight:900;background:linear-gradient(120deg,var(--text) 20%,#4E7A2F 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px">✅ Trilha de Estudos</h2>'
+    +'<p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">Organize sua preparação para o concurso</p>'
+
+    // Stats
+    +'<div class="card" style="padding:16px 20px;margin-bottom:16px;background:linear-gradient(135deg,rgba(78,122,47,.12),rgba(78,122,47,.04));border-color:rgba(78,122,47,.2)">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center">'
+        +[{lb:"Pendentes",val:pendentes,c:"var(--pink)"},{lb:"Feitas",val:feitas,c:"#16a34a"},{lb:"Total",val:state.tasks.length,c:"var(--text)"}].map(s=>'<div style="text-align:center"><p style="color:var(--text-muted);font-size:10px;font-weight:700;letter-spacing:.5px">'+s.lb.toUpperCase()+'</p><p style="font-size:28px;font-weight:900;color:'+s.c+'">'+s.val+'</p></div>').join("")
+      +'</div>'
+      +(state.tasks.length?'<div style="margin-top:12px"><div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-size:11px;color:var(--text-muted)">Progresso</span><span style="font-size:11px;font-weight:800;color:#4E7A2F">'+pct+'%</span></div><div style="height:6px;border-radius:6px;background:var(--border)"><div style="height:100%;border-radius:6px;width:'+pct+'%;background:linear-gradient(90deg,#4E7A2F,#7AC04E);transition:width .4s ease"></div></div></div>':'')
+    +'</div>'
+
+    // Add task
+    +'<div style="display:flex;gap:8px;margin-bottom:14px">'
+      +'<input class="inp" id="novaTask" placeholder="Nova tarefa de estudo…" style="border-radius:50px;flex:1"/>'
+      +'<button class="btn btn-pink" id="btnAddTask" style="padding:0 20px;font-size:22px;border-radius:50px;min-width:52px">+</button>'
+    +'</div>'
+
+    // Filters
+    +'<div style="display:flex;gap:8px;margin-bottom:14px;background:var(--inp-bg);border-radius:50px;padding:3px">'
+      +["todas","pendentes","feitas"].map(f=>'<button class="btn '+(state.filtroTask===f?"btn-pink":"btn-ghost")+'" data-filtro="'+f+'" style="flex:1;padding:7px 10px;font-size:12px;border-radius:40px;border:none;'+(state.filtroTask!==f?'background:transparent;color:var(--text-muted)':'')+'">'+f.charAt(0).toUpperCase()+f.slice(1)+'</button>').join("")
+    +'</div>'
+
+    +(filtradas.length===0?'<div style="text-align:center;padding:42px 0;color:var(--text-muted)"><span style="font-size:48px">'+(state.filtroTask==="feitas"?"🏆":"📝")+'</span><p style="margin-top:14px;font-size:14px;font-weight:600">'+(state.filtroTask==="feitas"?"Nenhuma tarefa concluída ainda.":state.filtroTask==="pendentes"?"Tudo em dia! 🎉":"Adicione sua primeira tarefa acima!")+'</p></div>':"")
+
+    +'<div style="display:flex;flex-direction:column;gap:8px">'+filtradas.map(t=>
+      '<div class="card task-item" style="opacity:'+(t.feita?.65:1)+';transition:opacity .2s">'
+        +'<button class="task-check '+(t.feita?"done":"")+'" data-taskid="'+t.id+'" style="background:'+(t.feita?'linear-gradient(135deg,#16a34a,#22c55e)':'var(--ghost-bg)')+';border-color:'+(t.feita?'#16a34a':'var(--border)')+';">'+(t.feita?'✓':'')+'</button>'
+        +'<p style="flex:1;font-size:14px;font-weight:600;text-decoration:'+(t.feita?"line-through":"none")+';color:'+(t.feita?"var(--text-muted)":"var(--text)")+';line-height:1.4">'+t.texto+'</p>'
+        +'<button class="btn btn-danger" data-deltask="'+t.id+'" style="padding:5px 12px;font-size:12px;border-radius:20px">✕</button>'
+      +'</div>').join("")
+    +'</div>'
+
+    +(feitas>0?'<button class="btn btn-danger" id="btnClearDone" style="width:100%;padding:13px;font-size:14px;margin-top:14px;border-radius:20px">🗑 Limpar concluídas ('+feitas+')</button>':"")
+  +'</div>'+renderNav("quiz");
 }
 
 function renderPlanos(){
@@ -941,7 +1026,48 @@ function renderPlanos(){
 function renderPerfil(){
   const uf=state.user?state.user.uf:"SP";
   const p=PLANOS[state.plano]||PLANOS.ferreiro;
-  return'<div class="screen fade-up"><div style="display:flex;flex-direction:column;align-items:center;margin-bottom:24px"><div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#D4207A,#D97706);display:flex;align-items:center;justify-content:center;font-size:36px;margin-bottom:10px">👤</div><h2 style="font-size:22px;font-weight:900;color:#3D1A05">'+(state.user?state.user.nome:"")+'</h2><p style="color:var(--text-sec);font-size:14px">'+(state.user?state.user.email:"")+'</p><div style="background:'+p.bg+';color:'+p.cor+';border:1px solid '+p.cor+'40;border-radius:20px;padding:5px 16px;font-size:13px;font-weight:800;margin-top:8px">'+p.emoji+' Plano '+p.nome+'</div></div><p style="font-weight:800;font-size:14px;margin-bottom:8px;color:#3D1A05">Estado monitorado</p><select class="inp" id="perfilUf" style="margin-bottom:20px">'+Object.entries(UF).sort((a,b)=>a[1].localeCompare(b[1])).map(([k,v])=>'<option value="'+k+'" '+(k===uf?"selected":"")+'>'+v+' ('+k+')</option>').join("")+'</select><div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">'+[{ic:"📍",lb:"Estado",val:(UF[uf]||uf)+" ("+uf+")"},{ic:"📋",lb:"Editais encontrados",val:state.concursos.length+" concursos"},{ic:"✅",lb:"Tarefas",val:state.tasks.length+" cadastradas ("+state.tasks.filter(t=>t.feita).length+" feitas)"},{ic:"🧠",lb:"Quizzes realizados",val:state.qHistory.length+" sessões"},{ic:"🏆",lb:"Melhor resultado",val:state.qHistory.length?(Math.max(...state.qHistory.map(h=>Math.round(h.score/h.total*100)))+"%"):"Nenhum ainda"}].map(item=>'<div class="card" style="padding:13px 16px;display:flex;align-items:center;gap:12px"><span style="font-size:20px">'+item.ic+'</span><div style="flex:1"><p style="color:var(--text-sec);font-size:11px">'+item.lb+'</p><p style="font-weight:700;font-size:14px;color:#3D1A05">'+item.val+'</p></div></div>').join("")+'</div><button class="btn btn-pink" id="btnVerPlanos" style="width:100%;padding:14px;font-size:15px;margin-bottom:10px">💎 Ver e gerenciar planos</button><button class="btn btn-danger" id="btnLogout" style="width:100%;padding:14px;font-size:15px;margin-bottom:10px">Sair da conta</button><button class="btn btn-ghost" id="btnAdmAccess" style="width:100%;padding:12px;font-size:13px;color:var(--text-muted)">⚙️ Acesso ADM</button></div>'+renderNav("perfil");
+  const isDark=state.theme==='dark';
+
+  return'<div class="screen fade-up">'
+    // Avatar hero
+    +'<div style="text-align:center;margin-bottom:22px">'
+      +'<div style="width:88px;height:88px;border-radius:50%;margin:0 auto 12px;background:linear-gradient(135deg,var(--pink),#C88B0A);display:flex;align-items:center;justify-content:center;font-size:38px;box-shadow:0 0 0 4px var(--card-bg),0 0 0 6px var(--pink),0 8px 28px rgba(212,32,122,.35)">👤</div>'
+      +'<h2 style="font-size:22px;font-weight:900;color:var(--text)">'+(state.user?state.user.nome:"")+'</h2>'
+      +'<p style="color:var(--text-muted);font-size:14px;margin-top:2px">'+(state.user?state.user.email:"")+'</p>'
+      +'<div style="display:inline-flex;align-items:center;gap:6px;margin-top:10px;background:linear-gradient(135deg,'+p.cor+'25,'+p.cor+'08);color:'+p.cor+';border:1.5px solid '+p.cor+'40;border-radius:50px;padding:6px 18px;font-size:13px;font-weight:900;box-shadow:0 4px 14px '+p.cor+'22">'+p.emoji+' Plano '+p.nome+'</div>'
+    +'</div>'
+
+    // Theme toggle
+    +'<div class="card" style="padding:14px 18px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">'
+      +'<div style="display:flex;align-items:center;gap:12px">'
+        +'<div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,rgba(212,32,122,.2),rgba(200,139,10,.1));display:flex;align-items:center;justify-content:center;font-size:20px">'+(isDark?'🌙':'☀️')+'</div>'
+        +'<div><p style="font-weight:800;font-size:14px;color:var(--text)">'+(isDark?"Modo Escuro":"Modo Claro")+'</p><p style="color:var(--text-muted);font-size:11px">Toque para alternar</p></div>'
+      +'</div>'
+      +'<button id="btnThemePerfil" style="background:linear-gradient(135deg,var(--pink),#A8185E);color:#fff;border:none;border-radius:20px;padding:7px 16px;font-size:12px;font-weight:900;cursor:pointer;font-family:Nunito,sans-serif;box-shadow:0 4px 14px rgba(212,32,122,.35)">'+(isDark?"☀️ Claro":"🌙 Escuro")+'</button>'
+    +'</div>'
+
+    // Estado
+    +'<p style="font-weight:900;font-size:13px;margin-bottom:6px;color:var(--text);letter-spacing:.3px">ESTADO MONITORADO</p>'
+    +'<select class="inp" id="perfilUf" style="margin-bottom:16px">'+Object.entries(UF).sort((a,b)=>a[1].localeCompare(b[1])).map(([k,v])=>'<option value="'+k+'" '+(k===uf?"selected":"")+'>'+v+' ('+k+')</option>').join("")+'</select>'
+
+    // Stats
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">'
+      +[
+        {ic:"📋",lb:"Editais",val:state.concursos.length+" encontrados",c:"#C4521A"},
+        {ic:"✅",lb:"Trilha",val:state.tasks.filter(t=>t.feita).length+"/"+state.tasks.length+" feitas",c:"#4E7A2F"},
+        {ic:"🧠",lb:"Quizzes",val:state.qHistory.length+" sessões",c:"#1B3A6B"},
+        {ic:"🏆",lb:"Melhor",val:state.qHistory.length?(Math.max(...state.qHistory.map(h=>Math.round(h.score/h.total*100)))+"%"):"—",c:"#C88B0A"},
+      ].map(s=>'<div class="card" style="padding:14px 16px;background:linear-gradient(145deg,'+s.c+'14,'+s.c+'04);border-color:'+s.c+'22;display:flex;align-items:center;gap:10px">'
+        +'<div style="font-size:22px">'+s.ic+'</div>'
+        +'<div><p style="color:var(--text-muted);font-size:10px;font-weight:700">'+s.lb.toUpperCase()+'</p><p style="font-weight:800;font-size:13px;color:'+s.c+'">'+s.val+'</p></div>'
+      +'</div>').join("")
+    +'</div>'
+
+    // Actions
+    +'<button class="btn btn-pink" id="btnVerPlanos" style="width:100%;padding:14px;font-size:15px;margin-bottom:10px">💎 Ver e gerenciar planos</button>'
+    +'<button class="btn btn-danger" id="btnLogout" style="width:100%;padding:14px;font-size:15px;margin-bottom:10px;border-radius:20px">Sair da conta</button>'
+    +'<button class="btn" id="btnAdmAccess" style="width:100%;padding:12px;font-size:12px;color:var(--text-muted);background:var(--ghost-bg);border-radius:20px;border:1px solid var(--border)">⚙️ Acesso ADM</button>'
+  +'</div>'+renderNav("perfil");
 }
 
 function renderAdm(){
