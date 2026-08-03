@@ -580,9 +580,12 @@ function renderHome(){
     {ic:"📋",lb:"Trilha",sub:"Seus estudos",id:"tarefas",req:"ferreiro",cls:"fc-trilha",color:"#4E7A2F"},
     {ic:"🎬",lb:"Aulas",sub:"Curso PodPrô",id:"videoaulas",req:"piaget",cls:"fc-aulas",color:"#C88B0A"},
   ];
-  const simBest=Object.values(Object.fromEntries(SIMULADOS.map(function(m){return[m.id,simGetBest(m.id)];})));
-  const simDone=simBest.filter(function(v){return v!==null;}).length;
-  const simPct=simDone>0?Math.round(simBest.filter(function(v){return v!==null;}).reduce(function(a,b){return a+b;},0)/simBest.filter(function(v){return v!==null;}).length):null;
+  var simDone=0,simPct=null;
+  try{
+    var _sb=SIMULADOS.map(function(m){return simGetBest(m.id);}).filter(function(v){return v!==null;});
+    simDone=_sb.length;
+    simPct=simDone>0?Math.round(_sb.reduce(function(a,b){return a+b;},0)/_sb.length):null;
+  }catch(e){simDone=0;simPct=null;}
   return'<div class="screen fade-up">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">'
       +'<div>'
