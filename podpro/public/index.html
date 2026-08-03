@@ -670,8 +670,8 @@ function renderAuth(){
     +(state.aMode==="register"?'<input class="auth-inp" id="aNome" placeholder="Nome completo"/>':'')
     +'<input class="auth-inp" id="aEmail" placeholder="E-mail" type="email"/>'
     +'<div style="position:relative">'
-      +'<input class="auth-inp" id="aSenha" placeholder="Senha" type="'+(showPwd?'text':'password')+'" style="padding-right:46px"/>'
-      +'<button id="btnTogglePwd" type="button" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:17px;cursor:pointer;opacity:.45;padding:4px;line-height:1;color:#F5E4C0">'+(showPwd?'🙈':'👁')+'</button>'
+      +'<input class="auth-inp" id="aSenha" placeholder="Senha" type="password" style="padding-right:46px"/>'
+      +'<button id="btnTogglePwd" type="button" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:17px;cursor:pointer;opacity:.45;padding:4px;line-height:1;color:#F5E4C0">👁</button>'
     +'</div>'
     +(state.aMode==="register"?'<select class="auth-inp" id="aUf">'+Object.entries(UF).sort(function(a,b){return a[1].localeCompare(b[1]);}).map(function(e){return'<option value="'+e[0]+'" '+(e[0]==="SP"?"selected":"")+'>'+e[1]+' ('+e[0]+')</option>';}).join("")+'</select>':"")
     +'<button class="auth-submit" id="btnAuth">'
@@ -1177,7 +1177,13 @@ function bindEvents(){
   on("authSwitch2","click",function(){setState({aMode:"login"});});
   on("btnAuth","click",handleAuth);
   on("aSenha","keydown",function(e){if(e.key==="Enter")handleAuth();});
-  on("btnTogglePwd","click",function(){var inp=$("aSenha");if(!inp)return;setState({_showPwd:inp.type==='password'});});
+  on("btnTogglePwd","click",function(){
+    var inp=$("aSenha");var btn=$("btnTogglePwd");
+    if(!inp)return;
+    var showing=inp.type==='text';
+    inp.type=showing?'password':'text';
+    if(btn)btn.textContent=showing?'👁':'🙈';
+  });
 
   on("btnUpgOk","click",async function(){
     var plano=state.upgPlano||'libaneo';var p=PLANOS[plano];
