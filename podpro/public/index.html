@@ -962,416 +962,91 @@ function finishSim(){
 function renderSimulados(){
   var mod=SIMULADOS.find(function(m){return m.id===state.simModId;});
   var quiz=state.simQuiz;
+
+  // ── Quiz screen ──
   if(quiz&&!state.simDone){
     var q=quiz.qs[quiz.cur];var answered=quiz.done[quiz.cur];
     var pct=Math.round((quiz.cur/quiz.qs.length)*100);
-    var opts=q.op.map(function(op,i){var cls='quiz-opt';if(answered){if(i===q.c)cls+=' correct';else if(i===quiz.ans[quiz.cur])cls+=' wrong';}return'<button class="'+cls+'" '+(answered?'disabled':'')+' onclick="answerSim('+i+')" style="text-align:left;width:100%"><span style="color:#C4521A;font-weight:900;margin-right:8px">'+String.fromCharCode(65+i)+')</span>'+op+'</button>';}).join('');
-    return'<div class="screen fade-up"><div style="display:flex;align-items:center;gap:10px;margin-bottom:16px"><button class="btn btn-ghost" onclick="setState({simQuiz:null,simDone:false})" style="padding:7px 14px;font-size:13px;color:var(--text)">← Sair</button><span style="background:linear-gradient(135deg,#C4521A,#8A3A13);color:#fff;border-radius:20px;padding:4px 14px;font-size:12px;font-weight:800">Módulo '+mod.id+'</span></div>'
+    var opts=q.op.map(function(op,i){
+      var cls='quiz-opt';
+      if(answered){if(i===q.c)cls+=' correct';else if(i===quiz.ans[quiz.cur])cls+=' wrong';}
+      return'<button class="'+cls+'" data-simans="'+i+'" style="text-align:left;width:100%;'+(answered?'pointer-events:none;':'')+'"><span style="color:#C4521A;font-weight:900;margin-right:8px">'+String.fromCharCode(65+i)+')</span>'+op+'</button>';
+    }).join('');
+    return'<div class="screen fade-up">'
+      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">'
+        +'<button class="btn btn-ghost" id="btnSimSair" style="padding:7px 14px;font-size:13px;color:var(--text)">← Sair</button>'
+        +'<span style="background:linear-gradient(135deg,#C4521A,#8A3A13);color:#fff;border-radius:20px;padding:4px 14px;font-size:12px;font-weight:800">Módulo '+mod.id+' · '+state.simBanca+'</span>'
+      +'</div>'
       +'<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="color:var(--text-muted);font-size:13px">Questão '+(quiz.cur+1)+' de '+quiz.qs.length+'</span><span style="color:#C4521A;font-weight:700;font-size:13px">'+q.b+'</span></div>'
       +'<div class="progress-wrap" style="margin-bottom:16px"><div class="progress-bar" style="background:linear-gradient(90deg,#C4521A,#E07B00);width:'+pct+'%"></div></div>'
       +'<div class="card" style="padding:20px;margin-bottom:14px;border-left:4px solid #C4521A"><p style="font-weight:700;font-size:15px;line-height:1.65;color:var(--text)">'+q.q+'</p></div>'
       +'<div style="display:flex;flex-direction:column;gap:10px">'+opts+'</div>'
       +(answered&&q.e?'<div style="margin-top:14px;padding:13px;border-radius:12px;background:rgba(196,82,26,.1);border:1px solid rgba(196,82,26,.25);font-size:13px;color:var(--text-sec)">💡 '+q.e+'</div>':'')
       +'<div style="display:flex;justify-content:space-between;margin-top:20px;gap:10px">'
-        +'<button class="btn btn-ghost" onclick="prevSimQ()" '+(quiz.cur===0?'disabled style="opacity:.4"':'')+' style="padding:12px 20px;font-size:14px;color:var(--text)">← Anterior</button>'
-        +(answered?'<button class="btn btn-pink" onclick="nextSimQ()" style="padding:12px 24px;font-size:14px">'+(quiz.cur===quiz.qs.length-1?'Ver resultado →':'Próxima →')+'</button>':'')
-      +'</div></div>'+renderNav('simulados');
+        +'<button class="btn btn-ghost" id="btnSimPrev" '+(quiz.cur===0?'disabled style="opacity:.4;pointer-events:none"':'')+' style="padding:12px 20px;font-size:14px;color:var(--text)">← Anterior</button>'
+        +(answered?'<button class="btn btn-pink" id="btnSimNext" style="padding:12px 24px;font-size:14px">'+(quiz.cur===quiz.qs.length-1?'Ver resultado →':'Próxima →')+'</button>':'')
+      +'</div>'
+    +'</div>'+renderNav('simulados');
   }
+
+  // ── Result screen ──
   if(quiz&&state.simDone){
     var acc=0;quiz.ans.forEach(function(a,i){if(a===quiz.qs[i].c)acc++;});
     var pct=Math.round(acc/quiz.qs.length*100);
     var msg=pct>=80?'Excelente! 🎉':pct>=60?'Bom resultado! 💪':'Continue revisando! 📚';
-    return'<div class="screen fade-up"><div style="text-align:center;margin-bottom:20px">'
-      +'<div style="width:120px;height:120px;border-radius:50%;margin:0 auto 14px;background:conic-gradient(#C4521A '+pct+'%,var(--border) 0);position:relative;display:flex;align-items:center;justify-content:center"><div style="position:absolute;inset:12px;border-radius:50%;background:var(--card-bg);display:flex;flex-direction:column;align-items:center;justify-content:center"><span style="font-size:26px;font-weight:900;color:var(--text)">'+pct+'%</span><span style="font-size:10px;color:var(--text-muted)">acerto</span></div></div>'
-      +'<h3 style="font-size:21px;font-weight:900;color:var(--text)">'+acc+' de '+quiz.qs.length+' corretas</h3>'
-      +'<p style="color:var(--text-muted);font-size:14px;margin-top:6px">'+msg+'</p></div>'
-      +'<div style="display:flex;gap:10px;margin-bottom:18px"><button class="btn btn-pink" onclick="startSimulado()" style="flex:1;padding:13px;font-size:14px">↺ Novo simulado</button><button class="btn btn-ghost" onclick="setState({simQuiz:null,simDone:false})" style="flex:1;padding:13px;font-size:14px;color:var(--text)">↩ Módulos</button></div>'
+    return'<div class="screen fade-up">'
+      +'<div style="text-align:center;margin-bottom:20px">'
+        +'<div style="width:120px;height:120px;border-radius:50%;margin:0 auto 14px;background:conic-gradient(#C4521A '+pct+'%,var(--border) 0);position:relative;display:flex;align-items:center;justify-content:center">'
+          +'<div style="position:absolute;inset:12px;border-radius:50%;background:var(--card-bg);display:flex;flex-direction:column;align-items:center;justify-content:center"><span style="font-size:26px;font-weight:900;color:var(--text)">'+pct+'%</span><span style="font-size:10px;color:var(--text-muted)">acerto</span></div>'
+        +'</div>'
+        +'<h3 style="font-size:21px;font-weight:900;color:var(--text)">'+acc+' de '+quiz.qs.length+' corretas</h3>'
+        +'<p style="color:var(--text-muted);font-size:14px;margin-top:6px">'+msg+'</p>'
+      +'</div>'
+      +'<div style="display:flex;gap:10px;margin-bottom:18px">'
+        +'<button class="btn btn-pink" id="btnSimRefaz" style="flex:1;padding:13px;font-size:14px">↺ Novo simulado</button>'
+        +'<button class="btn btn-ghost" id="btnSimVoltar" style="flex:1;padding:13px;font-size:14px;color:var(--text)">↩ Módulos</button>'
+      +'</div>'
       +'<div style="display:flex;flex-direction:column;gap:8px">'+quiz.qs.map(function(q,i){var ok=quiz.ans[i]===q.c;return'<div class="card" style="padding:12px 14px;border-left:3px solid '+(ok?'#4E7A2F':'#dc2626')+'"><p style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:4px">'+(i+1)+'. '+q.q+'</p><p style="font-size:12px;font-weight:700;color:'+(ok?'#4E7A2F':'#dc2626')+'">'+(ok?'✔ ':'✘ ')+q.op[q.c]+'</p></div>';}).join('')+'</div>'
     +'</div>'+renderNav('simulados');
   }
+
+  // ── Trail screen ──
   var bestAll={};SIMULADOS.forEach(function(m){bestAll[m.id]=simGetBest(m.id);});
   var trailHtml='<div style="overflow-x:auto;margin:0 -18px;padding:4px 18px 20px;-webkit-overflow-scrolling:touch"><div style="display:flex;align-items:center;min-width:max-content;gap:0;padding:8px 4px">'
-    +SIMULADOS.map(function(m,i){var best=bestAll[m.id];var isAct=m.id===state.simModId;var mastered=best!==null&&best>=70;
+    +SIMULADOS.map(function(m,i){
+      var best=bestAll[m.id];var isAct=m.id===state.simModId;var mastered=best!==null&&best>=70;
       var conn=i>0?'<div style="width:20px;height:3px;border-radius:2px;margin:0 2px;background:'+(bestAll[SIMULADOS[i-1].id]!==null?'rgba(196,82,26,.4)':'var(--border)')+'"></div>':'';
-      return conn+'<button onclick="selectSimMod('+m.id+')" style="width:50px;height:50px;border-radius:50%;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:Nunito,sans-serif;flex-shrink:0;position:relative;background:'+(isAct?'linear-gradient(135deg,#C4521A,#8A3A13)':mastered?'linear-gradient(135deg,#4E7A2F,#2A4A18)':'var(--card-bg)')+';border:2px solid '+(isAct?'#C4521A':mastered?'#4E7A2F':'var(--border)')+';box-shadow:'+(isAct?'0 6px 20px rgba(196,82,26,.45)':mastered?'0 4px 14px rgba(78,122,47,.35)':'var(--shadow)')+';transform:'+(isAct?'translateY(-5px) scale(1.12)':'none')+';color:'+(isAct||mastered?'#fff':'var(--text)')+'"><span style="font-size:16px;font-weight:900">'+m.id+'</span><span style="font-size:8px;opacity:.8">'+(best!==null?best+'%':'—')+'</span>'+(mastered&&!isAct?'<span style="position:absolute;top:-4px;right:-4px;width:15px;height:15px;border-radius:50%;background:#4E7A2F;color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center">✓</span>':'')+'</button>';
+      return conn+'<button data-simmod="'+m.id+'" style="width:50px;height:50px;border-radius:50%;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:Nunito,sans-serif;flex-shrink:0;position:relative;background:'+(isAct?'linear-gradient(135deg,#C4521A,#8A3A13)':mastered?'linear-gradient(135deg,#4E7A2F,#2A4A18)':'var(--card-bg)')+';border:2px solid '+(isAct?'#C4521A':mastered?'#4E7A2F':'var(--border)')+';box-shadow:'+(isAct?'0 6px 20px rgba(196,82,26,.45)':mastered?'0 4px 14px rgba(78,122,47,.35)':'var(--shadow)')+';transform:'+(isAct?'translateY(-5px) scale(1.12)':'none')+';color:'+(isAct||mastered?'#fff':'var(--text)')+'"><span style="font-size:16px;font-weight:900">'+m.id+'</span><span style="font-size:8px;opacity:.8">'+(best!==null?best+'%':'—')+'</span>'+(mastered&&!isAct?'<span style="position:absolute;top:-4px;right:-4px;width:15px;height:15px;border-radius:50%;background:#4E7A2F;color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center">✓</span>':'')+'</button>';
     }).join('')+'</div></div>';
+
   var bancas=['TODAS'].concat([...new Set(mod.questoes.map(function(q){return q.b;}))]);
-  var bancaHtml=bancas.map(function(b){var n=b==='TODAS'?mod.questoes.length:mod.questoes.filter(function(q){return q.b===b;}).length;var act=state.simBanca===b;return'<button onclick="selectSimBanca(\''+b+'\')" style="padding:7px 13px;border-radius:50px;border:1.5px solid '+(act?'#C4521A':'var(--border)')+';background:'+(act?'linear-gradient(135deg,#C4521A,#8A3A13)':'var(--card-bg)')+';color:'+(act?'#fff':'var(--text)')+';font-family:Nunito,sans-serif;font-size:12px;font-weight:700;cursor:pointer">'+b+' ('+n+')</button>';}).join('');
+  var bancaHtml=bancas.map(function(b){
+    var n=b==='TODAS'?mod.questoes.length:mod.questoes.filter(function(q){return q.b===b;}).length;
+    var act=state.simBanca===b;
+    return'<button data-simbanca="'+b+'" style="padding:7px 13px;border-radius:50px;border:1.5px solid '+(act?'#C4521A':'var(--border)')+';background:'+(act?'linear-gradient(135deg,#C4521A,#8A3A13)':'var(--card-bg)')+';color:'+(act?'#fff':'var(--text)')+';font-family:Nunito,sans-serif;font-size:12px;font-weight:700;cursor:pointer">'+b+' ('+n+')</button>';
+  }).join('');
+
   var hist=simGetHist(state.simModId).slice(-4).reverse();
   var histHtml=hist.length?'<div style="margin-top:14px"><p style="font-size:11px;color:#C4521A;font-weight:900;letter-spacing:.8px;margin-bottom:8px">TENTATIVAS ANTERIORES</p>'+hist.map(function(h){return'<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="font-size:12px;color:var(--text-sec)">'+h.b+'</span><span style="font-size:13px;font-weight:800;color:'+(h.pct>=70?'#4E7A2F':'#C4521A')+'">'+h.pct+'% ('+h.a+'/'+h.t+')</span></div>';}).join('')+'</div>':'';
+
   var bestMod=bestAll[state.simModId];
-  return'<div class="screen fade-up"><h2 style="font-size:24px;font-weight:900;background:linear-gradient(120deg,var(--text) 20%,#C4521A 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px">🎓 Trilha de Simulados</h2><p style="color:var(--text-muted);font-size:13px;margin-bottom:4px">'+SIMULADOS.length+' módulos · '+SIMULADOS.reduce(function(a,m){return a+m.questoes.length;},0)+' questões</p>'
-    +trailHtml
-    +'<div class="card" style="padding:20px 18px"><p style="font-size:10px;color:#C4521A;font-weight:900;letter-spacing:1px;margin-bottom:6px">MÓDULO '+state.simModId+' DE '+SIMULADOS.length+'</p><h3 style="font-size:18px;font-weight:900;color:var(--text);margin-bottom:12px">'+mod.titulo+'</h3>'
-    +'<div style="display:flex;gap:10px;margin-bottom:14px"><div style="background:var(--inp-bg);border-radius:10px;padding:8px 12px;text-align:center;flex:1"><p style="font-size:9px;color:var(--text-muted);font-weight:700">QUESTÕES</p><p style="font-size:22px;font-weight:900;color:#C4521A">'+mod.questoes.length+'</p></div><div style="background:var(--inp-bg);border-radius:10px;padding:8px 12px;text-align:center;flex:1"><p style="font-size:9px;color:var(--text-muted);font-weight:700">POR SIMULADO</p><p style="font-size:22px;font-weight:900;color:#1B3A6B">10</p></div><div style="background:'+(bestMod!==null?'rgba(78,122,47,.12)':'var(--inp-bg)')+';border-radius:10px;padding:8px 12px;text-align:center;flex:1"><p style="font-size:9px;color:var(--text-muted);font-weight:700">MELHOR</p><p style="font-size:22px;font-weight:900;color:'+(bestMod!==null?'#4E7A2F':'var(--text-muted)')+'">'+(bestMod!==null?bestMod+'%':'—')+'</p></div></div>'
-    +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">'+bancaHtml+'</div>'
-    +'<button onclick="startSimulado()" class="btn btn-pink" style="width:100%;padding:14px;font-size:15px">▶ Iniciar Simulado</button>'
-    +histHtml+'</div></div>'+renderNav('simulados');
-}
-window.selectSimMod=function(id){selectSimMod(id);};
-window.selectSimBanca=function(b){selectSimBanca(b);};
-window.startSimulado=function(){startSimulado();};
-window.answerSim=function(idx){answerSim(idx);};
-window.nextSimQ=function(){nextSimQ();};
-window.prevSimQ=function(){prevSimQ();};
-window.finishSim=function(){finishSim();};
-
-function renderPerfil(){
-  const uf=state.user?state.user.uf:"SP";
-  const p=PLANOS[state.plano]||PLANOS.ferreiro;
-  const isDark=state.theme==='dark';
-
   return'<div class="screen fade-up">'
-    // Avatar hero
-    +'<div style="text-align:center;margin-bottom:22px">'
-      +'<div style="width:88px;height:88px;border-radius:50%;margin:0 auto 12px;background:linear-gradient(135deg,var(--pink),#C88B0A);display:flex;align-items:center;justify-content:center;font-size:38px;box-shadow:0 0 0 4px var(--card-bg),0 0 0 6px var(--pink),0 8px 28px rgba(212,32,122,.35)">👤</div>'
-      +'<h2 style="font-size:22px;font-weight:900;color:var(--text)">'+(state.user?state.user.nome:"")+'</h2>'
-      +'<p style="color:var(--text-muted);font-size:14px;margin-top:2px">'+(state.user?state.user.email:"")+'</p>'
-      +'<div style="display:inline-flex;align-items:center;gap:6px;margin-top:10px;background:linear-gradient(135deg,'+p.cor+'25,'+p.cor+'08);color:'+p.cor+';border:1.5px solid '+p.cor+'40;border-radius:50px;padding:6px 18px;font-size:13px;font-weight:900;box-shadow:0 4px 14px '+p.cor+'22">'+p.emoji+' Plano '+p.nome+'</div>'
-    +'</div>'
-
-    // Theme toggle
-    +'<div class="card" style="padding:14px 18px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">'
-      +'<div style="display:flex;align-items:center;gap:12px">'
-        +'<div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,rgba(212,32,122,.2),rgba(200,139,10,.1));display:flex;align-items:center;justify-content:center;font-size:20px">'+(isDark?'🌙':'☀️')+'</div>'
-        +'<div><p style="font-weight:800;font-size:14px;color:var(--text)">'+(isDark?"Modo Escuro":"Modo Claro")+'</p><p style="color:var(--text-muted);font-size:11px">Toque para alternar</p></div>'
+    +'<h2 style="font-size:24px;font-weight:900;background:linear-gradient(120deg,var(--text) 20%,#C4521A 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px">🎓 Trilha de Simulados</h2>'
+    +'<p style="color:var(--text-muted);font-size:13px;margin-bottom:4px">'+SIMULADOS.length+' módulos · '+SIMULADOS.reduce(function(a,m){return a+m.questoes.length;},0)+' questões</p>'
+    +trailHtml
+    +'<div class="card" style="padding:20px 18px">'
+      +'<p style="font-size:10px;color:#C4521A;font-weight:900;letter-spacing:1px;margin-bottom:6px">MÓDULO '+state.simModId+' DE '+SIMULADOS.length+'</p>'
+      +'<h3 style="font-size:18px;font-weight:900;color:var(--text);margin-bottom:12px">'+mod.titulo+'</h3>'
+      +'<div style="display:flex;gap:10px;margin-bottom:14px">'
+        +'<div style="background:var(--inp-bg);border-radius:10px;padding:8px 12px;text-align:center;flex:1"><p style="font-size:9px;color:var(--text-muted);font-weight:700">QUESTÕES</p><p style="font-size:22px;font-weight:900;color:#C4521A">'+mod.questoes.length+'</p></div>'
+        +'<div style="background:var(--inp-bg);border-radius:10px;padding:8px 12px;text-align:center;flex:1"><p style="font-size:9px;color:var(--text-muted);font-weight:700">POR SIMULADO</p><p style="font-size:22px;font-weight:900;color:#1B3A6B">10</p></div>'
+        +'<div style="background:'+(bestMod!==null?'rgba(78,122,47,.12)':'var(--inp-bg)')+';border-radius:10px;padding:8px 12px;text-align:center;flex:1"><p style="font-size:9px;color:var(--text-muted);font-weight:700">MELHOR</p><p style="font-size:22px;font-weight:900;color:'+(bestMod!==null?'#4E7A2F':'var(--text-muted)')+'">'+(bestMod!==null?bestMod+'%':'—')+'</p></div>'
       +'</div>'
-      +'<button id="btnThemePerfil" style="background:linear-gradient(135deg,var(--pink),#A8185E);color:#fff;border:none;border-radius:20px;padding:7px 16px;font-size:12px;font-weight:900;cursor:pointer;font-family:Nunito,sans-serif;box-shadow:0 4px 14px rgba(212,32,122,.35)">'+(isDark?"☀️ Claro":"🌙 Escuro")+'</button>'
+      +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">'+bancaHtml+'</div>'
+      +'<button id="btnStartSim" class="btn btn-pink" style="width:100%;padding:14px;font-size:15px">▶ Iniciar Simulado</button>'
+      +histHtml
     +'</div>'
-
-    // Estado
-    +'<p style="font-weight:900;font-size:13px;margin-bottom:6px;color:var(--text);letter-spacing:.3px">ESTADO MONITORADO</p>'
-    +'<select class="inp" id="perfilUf" style="margin-bottom:16px">'+Object.entries(UF).sort((a,b)=>a[1].localeCompare(b[1])).map(([k,v])=>'<option value="'+k+'" '+(k===uf?"selected":"")+'>'+v+' ('+k+')</option>').join("")+'</select>'
-
-    // Stats
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">'
-      +[
-        {ic:"📋",lb:"Editais",val:state.concursos.length+" encontrados",c:"#C4521A"},
-        {ic:"✅",lb:"Trilha",val:state.tasks.filter(t=>t.feita).length+"/"+state.tasks.length+" feitas",c:"#4E7A2F"},
-        {ic:"🧠",lb:"Quizzes",val:state.qHistory.length+" sessões",c:"#1B3A6B"},
-        {ic:"🏆",lb:"Melhor",val:state.qHistory.length?(Math.max(...state.qHistory.map(h=>Math.round(h.score/h.total*100)))+"%"):"—",c:"#C88B0A"},
-      ].map(s=>'<div class="card" style="padding:14px 16px;background:linear-gradient(145deg,'+s.c+'14,'+s.c+'04);border-color:'+s.c+'22;display:flex;align-items:center;gap:10px">'
-        +'<div style="font-size:22px">'+s.ic+'</div>'
-        +'<div><p style="color:var(--text-muted);font-size:10px;font-weight:700">'+s.lb.toUpperCase()+'</p><p style="font-weight:800;font-size:13px;color:'+s.c+'">'+s.val+'</p></div>'
-      +'</div>').join("")
-    +'</div>'
-
-    // Actions
-    +'<button class="btn btn-pink" id="btnVerPlanos" style="width:100%;padding:14px;font-size:15px;margin-bottom:10px">💎 Ver e gerenciar planos</button>'
-    +'<button class="btn btn-danger" id="btnLogout" style="width:100%;padding:14px;font-size:15px;margin-bottom:10px;border-radius:20px">Sair da conta</button>'
-    +'<button class="btn" id="btnAdmAccess" style="width:100%;padding:12px;font-size:12px;color:var(--text-muted);background:var(--ghost-bg);border-radius:20px;border:1px solid var(--border)">⚙️ Acesso ADM</button>'
-  +'</div>'+renderNav("perfil");
+  +'</div>'+renderNav('simulados');
 }
 
-function renderAdm(){
-  const bancas=["","VUNESP","FCC","CEBRASPE","FGV","IBFC","AOCP","FAFIPA","FUNDATEC"];
-  const discs=["","Matemática","Língua Portuguesa","Ciências","História","Geografia","Biologia","Física","Química","Ed. Física","Arte","Inglês","Pedagogia","Geral"];
-  if(!state.admAuthed){
-    return'<div class="screen fade-up" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh"><div class="card" style="padding:28px 22px;width:100%;max-width:400px"><h2 style="font-size:22px;font-weight:900;margin-bottom:4px;text-align:center;color:#3D1A05">⚙️ Painel ADM</h2><p style="color:var(--text-sec);font-size:13px;text-align:center;margin-bottom:20px">Acesso restrito ao administrador</p><input class="inp" id="admPassInput" type="password" placeholder="Senha ADM" style="margin-bottom:12px"/><button class="btn btn-pink" id="btnAdmLogin" style="width:100%;padding:14px;font-size:15px">Entrar</button><button class="btn btn-ghost" id="btnAdmBack" style="width:100%;padding:12px;font-size:14px;margin-top:10px;color:#3D1A05">← Voltar</button></div></div>';
-  }
-  // Build ebooks ADM section
-  const ECAT=[{k:"geral",l:"Geral"},{k:"bncc",l:"BNCC"},{k:"autores",l:"Autoras/Autores"},{k:"legislacao",l:"Legislação"},{k:"resumo",l:"Resumos"}];
-  const ebooksSection='<div class="card" style="padding:20px;margin-bottom:20px"><h3 style="font-weight:800;font-size:16px;margin-bottom:14px;color:#3D1A05">📚 Adicionar E-book / Material</h3><div style="display:flex;flex-direction:column;gap:10px"><input class="inp" id="ebTitulo" placeholder="Título do e-book *"/><input class="inp" id="ebDesc" placeholder="Descrição curta"/><select class="inp" id="ebCategoria">'+ECAT.map(c=>'<option value="'+c.k+'">'+c.l+'</option>').join('')+'</select><input class="inp" id="ebPdfUrl" placeholder="URL do PDF (Google Drive, Dropbox…) — opcional"/><textarea class="inp" id="ebConteudo" rows="6" placeholder="Conteúdo em texto — cole aqui o texto do material (ou deixe vazio se usou PDF)" style="border-radius:14px;resize:vertical;min-height:120px"></textarea><input class="inp" id="ebOrdem" placeholder="Ordem (número)" type="number" value="0"/><button class="btn btn-pink" id="btnAdmAddEB" style="padding:14px;font-size:15px">'+(state.eLoading?'<span class="spin">⟳</span>':"📚 Adicionar E-book")+'</button></div></div><h3 style="font-weight:800;font-size:16px;margin-bottom:12px;color:#3D1A05">📚 E-books cadastrados ('+state.ebooks.length+')</h3>'+(state.ebooks.length===0?'<p style="color:var(--text-sec);font-size:14px;text-align:center;padding:16px">Nenhum e-book cadastrado ainda.</p>':'')+'<div style="display:flex;flex-direction:column;gap:8px">'+state.ebooks.map(eb=>'<div class="card" style="padding:14px;display:flex;align-items:flex-start;gap:10px"><div style="flex:1"><p style="font-weight:700;font-size:13px;color:#3D1A05">'+eb.titulo+'</p><div style="display:flex;gap:4px;margin-top:5px;flex-wrap:wrap">'+chip(eb.categoria&&eb.categoria!=="geral"?eb.categoria:"")+chip(eb.pdf_url?"📄 PDF":"")+chip(eb.conteudo?"📝 Texto":"")+'<span style="background:'+(eb.ativo?"rgba(22,163,74,.1)":"rgba(220,38,38,.1)")+';color:'+(eb.ativo?"#16a34a":"#c0392b")+';border-radius:8px;padding:2px 8px;font-size:10px;font-weight:700">'+(eb.ativo?"✓ Ativo":"✕ Inativo")+'</span>'+'</div></div><div style="display:flex;flex-direction:column;gap:5px"><button class="btn btn-ghost" data-ebtogg="'+eb.id+'" data-ebativo="'+eb.ativo+'" style="padding:4px 10px;font-size:11px;border-radius:12px;color:#3D1A05">'+(eb.ativo?"Pausar":"Ativar")+'</button><button class="btn btn-danger" data-ebdel="'+eb.id+'" style="padding:4px 10px;font-size:11px;border-radius:12px">🗑</button></div></div>').join('')+ '</div>';
 
-  return'<div class="screen fade-up"><div style="display:flex;align-items:center;gap:10px;margin-bottom:20px"><button class="btn btn-ghost" id="btnAdmBack" style="padding:8px 14px;font-size:13px;color:#3D1A05">← Sair</button><h2 style="font-size:20px;font-weight:900;color:#3D1A05">⚙️ Painel ADM</h2></div>'+ebooksSection+'<div class="card" style="padding:20px;margin-bottom:20px"><h3 style="font-weight:800;font-size:16px;margin-bottom:14px;color:#3D1A05">➕ Adicionar Videoaula</h3><div style="display:flex;flex-direction:column;gap:10px"><input class="inp" id="vaTitulo" placeholder="Título da aula *"/><input class="inp" id="vaUrl" placeholder="Link YouTube * (ex: https://youtu.be/...)"/><input class="inp" id="vaDesc" placeholder="Descrição (opcional)"/><div style="display:flex;gap:8px"><select class="inp" id="vaBanca" style="flex:1">'+bancas.map(b=>'<option value="'+b+'">'+(b||"Banca (opcional)")+'</option>').join("")+'</select><select class="inp" id="vaDisciplina" style="flex:1">'+discs.map(d=>'<option value="'+d+'">'+(d||"Disciplina (opcional)")+'</option>').join("")+'</select></div><input class="inp" id="vaOrdem" placeholder="Ordem (número)" type="number" value="0"/><button class="btn btn-pink" id="btnAdmAddVA" style="padding:14px;font-size:15px">'+(state.vLoading?'<span class="spin">⟳</span>':"➕ Adicionar Videoaula")+'</button></div></div><h3 style="font-weight:800;font-size:16px;margin-bottom:12px;color:#3D1A05">🎬 Videoaulas cadastradas ('+state.videoaulas.length+')</h3>'+(state.vLoading&&state.videoaulas.length===0?'<div style="text-align:center;padding:20px"><div class="loader spin" style="margin:0 auto"></div></div>':"")+(state.videoaulas.length===0&&!state.vLoading?'<p style="color:var(--text-sec);font-size:14px;text-align:center;padding:20px">Nenhuma videoaula cadastrada ainda.</p>':"")+'<div style="display:flex;flex-direction:column;gap:8px">'+state.videoaulas.map((v,i)=>{const ytId=v.youtube_url.split('/embed/')[1]?v.youtube_url.split('/embed/')[1].split('?')[0]:null;const thumb=ytId?"https://img.youtube.com/vi/"+ytId+"/default.jpg":null;return'<div class="card" style="padding:14px;display:flex;gap:12px;align-items:center">'+(thumb?'<img src="'+thumb+'" style="width:60px;height:44px;object-fit:cover;border-radius:8px;flex-shrink:0"/>':"")+'<div style="flex:1;min-width:0"><p style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#3D1A05">'+v.titulo+'</p><div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap">'+chip(v.banca?"🏦 "+v.banca:"")+chip(v.disciplina?"📚 "+v.disciplina:"")+'<span style="background:'+(v.ativo?"rgba(22,163,74,.1)":"rgba(220,38,38,.1)")+'";color:'+(v.ativo?"#16a34a":"#c0392b")+'border-radius:8px;padding:2px 8px;font-size:10px;font-weight:700">'+(v.ativo?"✓ Ativo":"✕ Inativo")+'</span></div></div><div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0"><button class="btn btn-ghost" data-admtoggle="'+v.id+'" data-admativo="'+v.ativo+'" style="padding:4px 10px;font-size:11px;border-radius:12px;color:#3D1A05">'+(v.ativo?"Pausar":"Ativar")+'</button><button class="btn btn-danger" data-admdel="'+v.id+'" style="padding:4px 10px;font-size:11px;border-radius:12px">🗑</button></div></div>';}).join("")+'</div></div>';
-}
-
-// ─── ACTIONS ─────────────────────────────────────────────────────────────────
-async function handleAuth(){
-  const nome=document.getElementById("aNome")?document.getElementById("aNome").value:"";
-  const email=document.getElementById("aEmail")?document.getElementById("aEmail").value:"";
-  const senha=document.getElementById("aSenha")?document.getElementById("aSenha").value:"";
-  const ufEl=document.getElementById("aUf");
-  const uf=ufEl?ufEl.value:"SP";
-  if(!email||!senha){showToast("Preencha todos os campos","e");return;}
-  if(state.aMode==="register"&&!nome){showToast("Informe seu nome","e");return;}
-  setState({aLoading:true});
-  if(state.aMode==="register"){
-    const r=await registerUser(nome,email,senha,uf);
-    if(!r.ok){showToast(r.msg,"e");setState({aLoading:false});return;}
-    showToast("Conta criada! Bem-vinda! 🎓");
-    const plano=r.user.plano||'ferreiro';
-    setState({user:r.user,plano,scr:"home",aLoading:false});
-    loadUserData(r.user);
-  }else{
-    const r=await loginUser(email,senha);
-    if(!r.ok){showToast(r.msg,"e");setState({aLoading:false});return;}
-    showToast("Olá, "+r.user.nome+"! 👋");
-    const plano=r.user.plano||'ferreiro';
-    setState({user:r.user,plano,scr:"home",aLoading:false});
-    loadUserData(r.user);
-  }
-}
-
-async function loadUserData(user){
-  const [tasks,qHistory]=await Promise.all([loadTasksAPI(user.id),loadQuizHistoryAPI(user.id)]);
-  setState({tasks,qHistory});
-  if(hasAccess('libaneo'))loadConcursos(user.uf);
-  setState({eLoading:true});loadEbooksAPI().then(ebooks=>setState({ebooks,eLoading:false}));
-  const params=new URLSearchParams(window.location.search);
-  if(params.get('assinatura')==='sucesso'){
-    showToast('Pagamento confirmado! Plano ativo! 🎉');
-    window.history.replaceState({},'',window.location.pathname);
-  }
-}
-
-function navTo(scr){
-  if(scr==="videoaulas"){
-    if(!hasAccess('piaget')){setState({upgModal:true,upgPlano:'piaget'});return;}
-    setState({scr:"videoaulas",selVaga:null,selVideoaula:null,vLoading:true});
-    loadVideoaulasAPI().then(videoaulas=>setState({videoaulas,vLoading:false}));
-    return;
-  }
-  if(scr==="simulados"){
-    setState({scr:"simulados",simQuiz:null,simDone:false});
-    return;
-  }
-  if(scr==="ebooks"){
-    setState({scr:"ebooks",selEbook:null,eLoading:true});
-    loadEbooksAPI().then(ebooks=>setState({ebooks,eLoading:false}));
-    return;
-  }
-  if(scr==="vagas"){
-    if(!hasAccess('libaneo')){setState({scr:"vagas"});return;}
-    setState({scr:"vagas",selVaga:null,selVideoaula:null});
-    if(state.concursos.length===0&&!state.cLoading&&state.user)loadConcursos(state.user.uf);
-    return;
-  }
-  setState({scr,selVaga:null,selVideoaula:null});
-}
-
-async function iniciarQuiz(banca){setState({bancaSel:banca,qIdx:0,qAns:null,qScore:0,qDone:false,scr:"quiz_jogo"});}
-
-async function responder(idx){
-  if(state.qAns!==null)return;
-  const questoes=QUIZ_BANCAS[state.bancaSel].questoes;
-  const correta=questoes[state.qIdx].r===idx;
-  const novoScore=correta?state.qScore+1:state.qScore;
-  setState({qAns:idx,qScore:novoScore});
-  setTimeout(async()=>{
-    if(state.qIdx+1<questoes.length){setState({qIdx:state.qIdx+1,qAns:null});}
-    else{
-      const novoH={banca:state.bancaSel,score:novoScore,total:questoes.length,data:new Date().toLocaleDateString("pt-BR")};
-      const hist=[novoH,...state.qHistory].slice(0,20);
-      await saveQuizResultAPI(state.user.id,state.bancaSel,novoScore,questoes.length);
-      setState({qDone:true,qHistory:hist});
-    }
-  },1100);
-}
-
-// ─── BIND EVENTS ─────────────────────────────────────────────────────────────
-function bindEvents(){
-  const $=id=>document.getElementById(id);
-  const on=(id,ev,fn)=>{const el=$(id);if(el)el.addEventListener(ev,fn);};
-
-  // ── Auth: 3D tilt on mouse move ─────────────────────────────────────────
-  (function setup3DTilt(){
-    var wrap=document.getElementById('auth3dWrap');
-    var card=document.getElementById('authCardContainer');
-    if(!wrap||!card)return;
-    wrap.addEventListener('mousemove',function(e){
-      var r=wrap.getBoundingClientRect();
-      var dx=(e.clientX-r.left-r.width/2)/(r.width/2);
-      var dy=(e.clientY-r.top-r.height/2)/(r.height/2);
-      card.style.transition='transform .06s ease';
-      card.style.transform='perspective(900px) rotateX('+(-dy*7)+'deg) rotateY('+(dx*7)+'deg)';
-    },{passive:true});
-    wrap.addEventListener('mouseleave',function(){
-      card.style.transition='transform .55s ease';
-      card.style.transform='perspective(900px) rotateX(0deg) rotateY(0deg)';
-    });
-  })();
-
-  // ── Auth: password toggle ─────────────────────────────────────────────────
-  on("btnTogglePwd","click",function(){
-    var inp=document.getElementById('aSenha');
-    if(!inp)return;
-    var show=inp.type==='password';
-    inp.type=show?'text':'password';
-    setState({_showPwd:show});
-  });
-
-  on("authTabLogin","click",()=>setState({aMode:"login",_showPwd:false}));
-  on("authTabReg","click",()=>setState({aMode:"register",_showPwd:false}));
-  on("authSwitch","click",()=>setState({aMode:"register"}));
-  on("authSwitch2","click",()=>setState({aMode:"login"}));
-  on("btnAuth","click",handleAuth);
-  on("aSenha","keydown",e=>{if(e.key==="Enter")handleAuth();});
-
-  on("btnUpgOk","click",async()=>{
-    const plano=state.upgPlano||'libaneo';
-    const p=PLANOS[plano];
-    if(state.user){const ok=await assinarPlano(state.user.id,state.user.email,state.user.nome,plano,p.preco);if(!ok)showToast("Erro ao abrir pagamento.","e");}
-    setState({upgModal:false});
-  });
-  on("btnUpgX","click",()=>setState({upgModal:false,scr:"planos"}));
-  const ov=document.getElementById("upgOverlay");
-  if(ov)ov.addEventListener("click",e=>{if(e.target.id==="upgOverlay")setState({upgModal:false});});
-
-  document.querySelectorAll("[data-nav]").forEach(btn=>btn.addEventListener("click",()=>navTo(btn.dataset.nav)));
-  on("btnPlanoBadge","click",()=>setState({scr:"planos"}));
-  on("btnVerPlanos","click",()=>setState({scr:"planos"}));
-  on("btnUpgradeLibaneo","click",()=>{setState({upgModal:true,upgPlano:'libaneo'});});
-  on("btnUpgLibaneo","click",()=>setState({scr:"planos"}));
-  on("btnUpgPiaget","click",()=>{setState({upgModal:true,upgPlano:'piaget'});});
-
-  // Planos page - subscribe buttons
-  document.querySelectorAll("[data-upgplano]").forEach(btn=>btn.addEventListener("click",async()=>{
-    const plano=btn.dataset.upgplano;
-    const p=PLANOS[plano];
-    if(state.user){
-      const ok=await assinarPlano(state.user.id,state.user.email,state.user.nome,plano,p.preco);
-      if(!ok)showToast("Erro ao abrir pagamento.","e");
-    }
-  }));
-
-  on("btnHomeRefresh","click",()=>{if(!state.cLoading&&state.user)loadConcursos(state.user.uf);});
-  document.querySelectorAll("[data-vaga]").forEach(btn=>btn.addEventListener("click",()=>setState({selVaga:state.concursos[parseInt(btn.dataset.vaga)],scr:"vagas"})));
-  on("btnVagaBack","click",()=>setState({selVaga:null}));
-  on("btnVagasRefresh","click",()=>{if(!state.cLoading&&state.user)loadConcursos(state.user.uf);});
-  document.querySelectorAll("[data-vagaidx]").forEach(btn=>btn.addEventListener("click",()=>setState({selVaga:state.concursos[parseInt(btn.dataset.vagaidx)]})));
-
-  document.querySelectorAll("[data-banca]").forEach(btn=>btn.addEventListener("click",()=>iniciarQuiz(btn.dataset.banca)));
-  on("btnQuizSair","click",()=>setState({scr:"quiz",bancaSel:null}));
-  on("btnQuizRefaz","click",()=>iniciarQuiz(state.bancaSel));
-  on("btnQuizOutras","click",()=>setState({scr:"quiz",bancaSel:null}));
-  document.querySelectorAll("[data-opt]").forEach(btn=>btn.addEventListener("click",()=>responder(parseInt(btn.dataset.opt))));
-
-  on("btnVABack","click",()=>setState({selVideoaula:null}));
-  document.querySelectorAll("[data-va]").forEach(btn=>btn.addEventListener("click",()=>setState({selVideoaula:state.videoaulas[parseInt(btn.dataset.va)]})));
-
-  on("btnAddTask","click",async()=>{
-    const val=$("novaTask")?$("novaTask").value.trim():"";
-    if(!val)return;
-    const nova=await addTaskAPI(state.user.id,val);
-    if(nova){setState({tasks:[...state.tasks,nova]});showToast("Tarefa adicionada! ✅");}
-  });
-  on("novaTask","keydown",async e=>{
-    if(e.key==="Enter"){const val=e.target.value.trim();if(!val)return;const nova=await addTaskAPI(state.user.id,val);if(nova){setState({tasks:[...state.tasks,nova]});showToast("Tarefa adicionada! ✅");}}
-  });
-  document.querySelectorAll("[data-filtro]").forEach(btn=>btn.addEventListener("click",()=>setState({filtroTask:btn.dataset.filtro})));
-  document.querySelectorAll("[data-taskid]").forEach(btn=>btn.addEventListener("click",async()=>{
-    const task=state.tasks.find(t=>t.id===btn.dataset.taskid);
-    if(!task)return;
-    const novas=state.tasks.map(t=>t.id===btn.dataset.taskid?{...t,feita:!t.feita}:t);
-    await toggleTaskAPI(state.user.id,btn.dataset.taskid,!task.feita);
-    setState({tasks:novas});
-  }));
-  document.querySelectorAll("[data-deltask]").forEach(btn=>btn.addEventListener("click",async()=>{
-    await deleteTaskAPI(state.user.id,btn.dataset.deltask);
-    setState({tasks:state.tasks.filter(t=>t.id!==btn.dataset.deltask)});
-    showToast("Tarefa removida");
-  }));
-  on("btnClearDone","click",async()=>{
-    const qtd=state.tasks.filter(t=>t.feita).length;
-    await clearDoneTasksAPI(state.user.id);
-    setState({tasks:state.tasks.filter(t=>!t.feita)});
-    showToast(qtd+" tarefa(s) removida(s)");
-  });
-
-  on("perfilUf","change",async e=>{
-    const novoUf=e.target.value;
-    setState({user:{...state.user,uf:novoUf}});
-    if(hasAccess('libaneo'))loadConcursos(novoUf);
-    showToast("Monitorando "+UF[novoUf]+"! 📡");
-  });
-  on("btnThemePerfil","click",()=>setState({theme:state.theme==="dark"?"light":"dark"}));
-  on("_themeToggle","click",()=>setState({theme:state.theme==="dark"?"light":"dark"}));
-  on("btnLogout","click",()=>setState({user:null,scr:"auth",aMode:"login",concursos:[],tasks:[],qHistory:[],cFonte:"",selVaga:null,plano:"ferreiro"}));
-  on("btnUpgVygotsky","click",()=>{setState({upgModal:true,upgPlano:'vygotsky'});});
-  on("btnEbookBack","click",()=>setState({selEbook:null}));
-  document.querySelectorAll("[data-ebidx]").forEach(btn=>btn.addEventListener("click",()=>setState({selEbook:state.ebooks[parseInt(btn.dataset.ebidx)]})));
-
-  // ADM ebooks
-  on("btnAdmAddEB","click",async()=>{
-    const titulo=document.getElementById("ebTitulo")?document.getElementById("ebTitulo").value.trim():"";
-    const descricao=document.getElementById("ebDesc")?document.getElementById("ebDesc").value.trim():"";
-    const categoria=document.getElementById("ebCategoria")?document.getElementById("ebCategoria").value:"geral";
-    const conteudo=document.getElementById("ebConteudo")?document.getElementById("ebConteudo").value.trim():"";
-    const pdf_url=document.getElementById("ebPdfUrl")?document.getElementById("ebPdfUrl").value.trim():"";
-    const ordem=document.getElementById("ebOrdem")?document.getElementById("ebOrdem").value:"0";
-    if(!titulo){showToast("Título obrigatório","e");return;}
-    if(!conteudo&&!pdf_url){showToast("Informe o texto ou a URL do PDF","e");return;}
-    setState({eLoading:true});
-    const r=await addEbookAPI(state.admPass,{titulo,descricao,categoria,conteudo,pdf_url,ordem});
-    if(r.error){showToast(r.error,"e");setState({eLoading:false});return;}
-    const ebs=await loadEbooksAPI();
-    setState({ebooks:ebs,eLoading:false});
-    showToast("E-book adicionado! 📚");
-  });
-  document.querySelectorAll("[data-ebtogg]").forEach(btn=>btn.addEventListener("click",async()=>{
-    const ativo=btn.dataset.ebativo==="true";
-    await toggleEbookAPI(state.admPass,btn.dataset.ebtogg,!ativo);
-    const ebs=await loadEbooksAPI();setState({ebooks:ebs});
-  }));
-  document.querySelectorAll("[data-ebdel]").forEach(btn=>btn.addEventListener("click",async()=>{
-    if(!confirm("Remover este e-book?"))return;
-    await deleteEbookAPI(state.admPass,btn.dataset.ebdel);
-    const ebs=await loadEbooksAPI();setState({ebooks:ebs});
-    showToast("E-book removido");
-  }));
-
-  on("btnAdmAccess","click",()=>setState({scr:"adm",admAuthed:false,admPass:""}));
-
-  on("btnAdmLogin","click",async()=>{
-    const pass=$("admPassInput")?$("admPassInput").value:"";
-    const r=await api('videoaulas',{method:'GET'});
-    if(r.error){showToast("Erro de conexão","e");return;}
-    const test=await fetch(API_BASE+'/api/videoaulas',{method:'POST',headers:{'Content-Type':'application/json','x-admin-password':pass},body:JSON.stringify({titulo:"_test_",youtube_url:"https://youtu.be/dQw4w9WgXcQ"})});
-    const testR=await test.json();
-    if(testR.error&&testR.error.toLowerCase().includes("senha")){showToast("Senha incorreta","e");return;}
-    if(testR.videoaula)await api('videoaulas',{method:'DELETE',headers:{'x-admin-password':pass},body:{id:testR.videoaula.id}});
-    setState({admAuthed:true,admPass:pass,vLoading:true});
-    const vas=await loadVideoaulasAPI();
-    setState({videoaulas:vas,vLoading:false});
-  });
-  on("admPassInput","keydown",e=>{if(e.key==="Enter")document.getElementById("btnAdmLogin")&&document.getElementById("btnAdmLogin").click();});
-  on("btnAdmBack","click",()=>setState({scr:"perfil",admAuthed:false}));
-
-  on("btnAdmAddVA","click",async()=>{
-    const titulo=$("vaTitulo")?$("vaTitulo").value.trim():"";
-    const youtube_url=$("vaUrl")?$("vaUrl").value.trim():"";
-    const descricao=$("vaDesc")?$("vaDesc").value.trim():"";
-    const banca=$("vaBanca")?$("vaBanca").value:"";
-    const disciplina=$("vaDisciplina")?$("vaDisciplina").value:"";
-    const ordem=parseInt($("vaOrdem")?$("vaOrdem").value:0)||0;
-    if(!titulo||!youtube_url){showToast("Título e URL são obrigatórios","e");return;}
-    setState({vLoading:true});
-    const r=await addVideoaulaAPI(state.admPass,{titulo,descricao,youtube_url,banca,disciplina,ordem});
-    if(r.error){showToast(r.error,"e");setState({vLoading:false});return;}
-    const vas=await loadVideoaulasAPI();
-    setState({videoaulas:vas,vLoading:false});
-    showToast("Videoaula adicionada! 🎬");
-  });
-
-  document.querySelectorAll("[data-admtoggle]").forEach(btn=>btn.addEventListener("click",async()=>{
-    const ativo=btn.dataset.admativo==="true";
-    setState({vLoading:true});
-    await toggleVideoaulaAPI(state.admPass,btn.dataset.admtoggle,!ativo);
-    const vas=await loadVideoaulasAPI();
-    setState({videoaulas:vas,vLoading:false});
-  }));
-  document.querySelectorAll("[data-admdel]").forEach(btn=>btn.addEventListener("click",async()=>{
-    if(!confirm("Remover esta videoaula?"))return;
-    setState({vLoading:true});
-    await deleteVideoaulaAPI(state.admPass,btn.dataset.admdel);
-    const vas=await loadVideoaulasAPI();
-    setState({videoaulas:vas,vLoading:false});
-    showToast("Videoaula removida");
-  }));
-}
-
-// ─── GLOBAL ONCLICK HANDLERS ────────────────────────────────────────────────
-window.selectSimMod   = function(id){ selectSimMod(id); };
-window.selectSimBanca = function(b){  selectSimBanca(b); };
-window.startSimulado  = function(){   startSimulado(); };
-window.answerSim      = function(idx){ answerSim(idx); };
-window.nextSimQ       = function(){   nextSimQ(); };
-window.prevSimQ       = function(){   prevSimQ(); };
-window.finishSim      = function(){   finishSim(); };
-
-// ─── INIT ─────────────────────────────────────────────────────────────────────
-render();
-</script>
-</body>
-</html>
