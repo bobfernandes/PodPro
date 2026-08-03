@@ -567,7 +567,7 @@ function renderScreen(){
 }
 
 function renderNav(active){
-  const items=[{id:"home",ic:"🏠",lb:"Início"},{id:"simulados",ic:"🎓",lb:"Trilha"},{id:"planos",ic:"💎",lb:"Planos"},{id:"vagas",ic:"📡",lb:"Radar"},{id:"perfil",ic:"👤",lb:"Perfil"}];
+  const items=[{id:"home",ic:"🏠",lb:"Início"},{id:"simulados",ic:"🎓",lb:"Simulados"},{id:"planos",ic:"💎",lb:"Planos"},{id:"vagas",ic:"📡",lb:"Radar"},{id:"perfil",ic:"👤",lb:"Perfil"}];
   return'<nav class="nav">'+items.map(i=>'<button class="nav-btn '+(active===i.id?"active":"")+'" data-nav="'+i.id+'"><span class="ic">'+i.ic+'</span><span class="lb">'+i.lb+'</span></button>').join("")+'</nav>';
 }
 
@@ -580,6 +580,9 @@ function renderHome(){
     {ic:"📋",lb:"Trilha",sub:"Seus estudos",id:"tarefas",req:"ferreiro",cls:"fc-trilha",color:"#4E7A2F"},
     {ic:"🎬",lb:"Aulas",sub:"Curso PodPrô",id:"videoaulas",req:"piaget",cls:"fc-aulas",color:"#C88B0A"},
   ];
+  const simBest=Object.values(Object.fromEntries(SIMULADOS.map(function(m){return[m.id,simGetBest(m.id)];})));
+  const simDone=simBest.filter(function(v){return v!==null;}).length;
+  const simPct=simDone>0?Math.round(simBest.filter(function(v){return v!==null;}).reduce(function(a,b){return a+b;},0)/simBest.filter(function(v){return v!==null;}).length):null;
   return'<div class="screen fade-up">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">'
       +'<div>'
@@ -596,6 +599,15 @@ function renderHome(){
       +'</div>'
       +(state.cAtualizado?'<div style="text-align:right"><p style="font-size:9px;color:'+p.cor+';font-weight:800;letter-spacing:.5px">ATUALIZADO</p><p style="font-size:12px;font-weight:800;color:var(--text)">'+state.cAtualizado+'</p></div>':state.cLoading?'<span class="spin" style="color:'+p.cor+';font-size:22px">↻</span>':'')
     +'</div>'
+    +'<button data-nav="simulados" class="btn" style="display:flex;align-items:center;gap:14px;width:100%;border-radius:20px;padding:18px 20px;text-align:left;margin-bottom:10px;background:linear-gradient(135deg,#1B6B6B,#0F3A3A);border:none;box-shadow:0 8px 28px rgba(27,107,107,.55),inset 0 1px 0 rgba(255,255,255,.18);font-family:Nunito,sans-serif;cursor:pointer;transition:transform .2s">'
+      +'<div style="width:56px;height:56px;border-radius:16px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0">🎓</div>'
+      +'<div style="flex:1">'
+        +'<p style="font-size:11px;color:rgba(255,255,255,.7);font-weight:800;letter-spacing:1px;margin-bottom:3px">TRILHA DE SIMULADOS</p>'
+        +'<p style="font-size:18px;font-weight:900;color:#fff;margin-bottom:2px">19 módulos · Pedagogia</p>'
+        +'<p style="font-size:12px;color:rgba(255,255,255,.65)">'+(simDone>0?simDone+' módulos feitos · Média '+simPct+'%':'Comece agora e acompanhe seu progresso')+'</p>'
+      +'</div>'
+      +'<span style="font-size:22px;color:rgba(255,255,255,.6)">›</span>'
+    +'</button>'
     +'<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:22px">'
     +cards.map(c=>{
       const locked=!hasAccess(c.req);
@@ -719,6 +731,15 @@ function renderHome(){
     +'</div>'
 
     // Feature grid
+    +'<button data-nav="simulados" class="btn" style="display:flex;align-items:center;gap:14px;width:100%;border-radius:20px;padding:18px 20px;text-align:left;margin-bottom:10px;background:linear-gradient(135deg,#1B6B6B,#0F3A3A);border:none;box-shadow:0 8px 28px rgba(27,107,107,.55),inset 0 1px 0 rgba(255,255,255,.18);font-family:Nunito,sans-serif;cursor:pointer;transition:transform .2s">'
+      +'<div style="width:56px;height:56px;border-radius:16px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0">🎓</div>'
+      +'<div style="flex:1">'
+        +'<p style="font-size:11px;color:rgba(255,255,255,.7);font-weight:800;letter-spacing:1px;margin-bottom:3px">TRILHA DE SIMULADOS</p>'
+        +'<p style="font-size:18px;font-weight:900;color:#fff;margin-bottom:2px">19 módulos · Pedagogia</p>'
+        +'<p style="font-size:12px;color:rgba(255,255,255,.65)">'+(simDone>0?simDone+' módulos feitos · Média '+simPct+'%':'Comece agora e acompanhe seu progresso')+'</p>'
+      +'</div>'
+      +'<span style="font-size:22px;color:rgba(255,255,255,.6)">›</span>'
+    +'</button>'
     +'<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:22px">'
     +cards.map(c=>{
       const locked=!hasAccess(c.req);
