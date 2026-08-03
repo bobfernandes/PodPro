@@ -179,6 +179,7 @@ select.inp{appearance:none;-webkit-appearance:none}
 .fc-trilha{background:linear-gradient(145deg,#4E7A2F,#365420)!important;border:none!important}
 .fc-ebooks{background:linear-gradient(145deg,#B84A16,#8C3410)!important;border:none!important}
 .fc-aulas{background:linear-gradient(145deg,#C88B0A,#9A6A06)!important;border:none!important}
+.fc-sim{background:linear-gradient(145deg,#C88B0A,#8A6006)!important;border:none!important}
 .fc-locked{background:rgba(26,8,0,.08)!important;border:1.5px dashed rgba(26,8,0,.15)!important;box-shadow:none!important}
 .dark .fc-locked{background:rgba(245,228,192,.06)!important;border:1.5px dashed rgba(245,228,192,.12)!important}
 
@@ -231,6 +232,8 @@ body:not(.dark) #auth-card-inner{background:rgba(22,8,2,.75)}
 /* ── Theme toggle btn ─────────────────────────────────────────────────────── */
 
 
+body:not(.dark) #_themeToggle{background:rgba(61,26,5,.45);border-color:rgba(61,26,5,.2);}
+#_themeToggle:hover{transform:scale(1.12);}
 </style>
 </head>
 <body>
@@ -516,10 +519,14 @@ function applyGlow(){
 })();
 
 function render(){
-  document.getElementById("root").innerHTML='<div class="app"><div class="bg"></div>'+renderToast()+renderScreen()+renderUpgModal()+'</div>';
+  var _dk=state.theme==='dark';
+  var _thBtn='<button id="_themeToggle" title="'+((_dk)?'Modo Claro':'Modo Escuro')+'" style="position:fixed;top:14px;right:14px;z-index:500;width:34px;height:34px;border-radius:50%;border:1px solid rgba(245,228,192,.2);background:rgba(18,6,2,.55);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 12px rgba(0,0,0,.25);transition:transform .15s">'+(_dk?'☀️':'🌙')+'</button>';
+  document.getElementById("root").innerHTML='<div class="app"><div class="bg"></div>'+_thBtn+renderToast()+renderScreen()+renderUpgModal()+'</div>';
   bindEvents();
   applyGlow();
   applyTheme(state.theme);
+  var _tb=document.getElementById('_themeToggle');
+  if(_tb)_tb.onclick=function(){setState({theme:state.theme==='dark'?'light':'dark'});};
 
 }
 
@@ -568,7 +575,7 @@ function renderHome(){
     {ic:"📋",lb:"Trilha",sub:"Seus estudos",id:"tarefas",req:"ferreiro",cls:"fc-trilha",color:"#4E7A2F"},
     {ic:"📚",lb:"E-books",sub:"Kit Pedagoga",id:"ebooks",req:"ferreiro",cls:"fc-ebooks",color:"#B84A16"},
     {ic:"🎬",lb:"Aulas",sub:"Curso PodPrô",id:"videoaulas",req:"piaget",cls:"fc-aulas",color:"#C88B0A"},
-    {ic:"🎓",lb:"Simulados",sub:"Trilha 19 módulos",id:"simulados",req:"ferreiro",cls:"fc-trilha",color:"#4E7A2F"},
+    {ic:"🎓",lb:"Simulados",sub:"Trilha 19 módulos",id:"simulados",req:"ferreiro",cls:"fc-sim",color:"#C88B0A"},
   ];
   return'<div class="screen fade-up">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">'
@@ -1204,6 +1211,7 @@ function bindEvents(){
     showToast("Monitorando "+UF[novoUf]+"! 📡");
   });
   on("btnThemePerfil","click",()=>setState({theme:state.theme==="dark"?"light":"dark"}));
+  on("_themeToggle","click",()=>setState({theme:state.theme==="dark"?"light":"dark"}));
   on("btnLogout","click",()=>setState({user:null,scr:"auth",aMode:"login",concursos:[],tasks:[],qHistory:[],cFonte:"",selVaga:null,plano:"ferreiro"}));
   on("btnUpgVygotsky","click",()=>{setState({upgModal:true,upgPlano:'vygotsky'});});
   on("btnEbookBack","click",()=>setState({selEbook:null}));
