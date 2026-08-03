@@ -1050,3 +1050,267 @@ function renderSimulados(){
 }
 
 
+
+function renderPerfil(){
+  var uf=state.user?state.user.uf:"SP";
+  var p=PLANOS[state.plano]||PLANOS.ferreiro;
+  var isDark=state.theme==='dark';
+  return'<div class="screen fade-up">'
+    +'<div style="text-align:center;margin-bottom:22px">'
+      +'<div style="width:88px;height:88px;border-radius:50%;margin:0 auto 12px;background:linear-gradient(135deg,var(--pink),#C88B0A);display:flex;align-items:center;justify-content:center;font-size:38px;box-shadow:0 0 0 4px var(--card-bg),0 0 0 6px var(--pink),0 8px 28px rgba(212,32,122,.35)">👤</div>'
+      +'<h2 style="font-size:22px;font-weight:900;color:var(--text)">'+(state.user?state.user.nome:"")+'</h2>'
+      +'<p style="color:var(--text-muted);font-size:14px;margin-top:2px">'+(state.user?state.user.email:"")+'</p>'
+      +'<div style="display:inline-flex;align-items:center;gap:6px;margin-top:10px;background:linear-gradient(135deg,'+p.cor+'25,'+p.cor+'08);color:'+p.cor+';border:1.5px solid '+p.cor+'40;border-radius:50px;padding:6px 18px;font-size:13px;font-weight:900;box-shadow:0 4px 14px '+p.cor+'22">'+p.emoji+' Plano '+p.nome+'</div>'
+    +'</div>'
+    +'<div class="card" style="padding:14px 18px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">'
+      +'<div style="display:flex;align-items:center;gap:12px">'
+        +'<div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,rgba(212,32,122,.2),rgba(200,139,10,.1));display:flex;align-items:center;justify-content:center;font-size:20px">'+(isDark?'🌙':'☀️')+'</div>'
+        +'<div><p style="font-weight:800;font-size:14px;color:var(--text)">'+(isDark?"Modo Escuro":"Modo Claro")+'</p><p style="color:var(--text-muted);font-size:11px">Toque para alternar</p></div>'
+      +'</div>'
+      +'<button id="btnThemePerfil" style="background:linear-gradient(135deg,var(--pink),#A8185E);color:#fff;border:none;border-radius:20px;padding:7px 16px;font-size:12px;font-weight:900;cursor:pointer;font-family:Nunito,sans-serif;box-shadow:0 4px 14px rgba(212,32,122,.35)">'+(isDark?"☀️ Claro":"🌙 Escuro")+'</button>'
+    +'</div>'
+    +'<p style="font-weight:900;font-size:13px;margin-bottom:6px;color:var(--text);letter-spacing:.3px">ESTADO MONITORADO</p>'
+    +'<select class="inp" id="perfilUf" style="margin-bottom:16px">'+Object.entries(UF).sort(function(a,b){return a[1].localeCompare(b[1]);}).map(function(e){return'<option value="'+e[0]+'" '+(e[0]===uf?"selected":"")+'>'+e[1]+' ('+e[0]+')</option>';}).join("")+'</select>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">'
+      +[{ic:"📋",lb:"Editais",val:state.concursos.length+" encontrados",c:"#C4521A"},{ic:"✅",lb:"Trilha",val:state.tasks.filter(function(t){return t.feita;}).length+"/"+state.tasks.length+" feitas",c:"#4E7A2F"},{ic:"🧠",lb:"Quizzes",val:state.qHistory.length+" sessões",c:"#1B3A6B"},{ic:"🏆",lb:"Melhor",val:state.qHistory.length?(Math.max.apply(null,state.qHistory.map(function(h){return Math.round(h.score/h.total*100);})))+"%":"—",c:"#C88B0A"}].map(function(s){return'<div class="card" style="padding:14px 16px;background:linear-gradient(145deg,'+s.c+'14,'+s.c+'04);border-color:'+s.c+'22;display:flex;align-items:center;gap:10px"><div style="font-size:22px">'+s.ic+'</div><div><p style="color:var(--text-muted);font-size:10px;font-weight:700">'+s.lb.toUpperCase()+'</p><p style="font-weight:800;font-size:13px;color:'+s.c+'">'+s.val+'</p></div></div>';}).join("")
+    +'</div>'
+    +'<button class="btn btn-pink" id="btnVerPlanos" style="width:100%;padding:14px;font-size:15px;margin-bottom:10px">💎 Ver e gerenciar planos</button>'
+    +'<button class="btn btn-danger" id="btnLogout" style="width:100%;padding:14px;font-size:15px;margin-bottom:10px;border-radius:20px">Sair da conta</button>'
+    +'<button class="btn" id="btnAdmAccess" style="width:100%;padding:12px;font-size:12px;color:var(--text-muted);background:var(--ghost-bg);border-radius:20px;border:1px solid var(--border)">⚙️ Acesso ADM</button>'
+  +'</div>'+renderNav("perfil");
+}
+
+function renderAdm(){
+  var bancas=["","VUNESP","FCC","CEBRASPE","FGV","IBFC","AOCP","FAFIPA","FUNDATEC"];
+  var discs=["","Matemática","Língua Portuguesa","Ciências","História","Geografia","Pedagogia","Geral"];
+  if(!state.admAuthed){
+    return'<div class="screen fade-up" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh"><div class="card" style="padding:28px 22px;width:100%;max-width:400px"><h2 style="font-size:22px;font-weight:900;margin-bottom:4px;text-align:center;color:var(--text)">⚙️ Painel ADM</h2><p style="color:var(--text-muted);font-size:13px;text-align:center;margin-bottom:20px">Acesso restrito</p><input class="inp" id="admPassInput" type="password" placeholder="Senha ADM" style="margin-bottom:12px"/><button class="btn btn-pink" id="btnAdmLogin" style="width:100%;padding:14px;font-size:15px">Entrar</button><button class="btn btn-ghost" id="btnAdmBack" style="width:100%;padding:12px;font-size:14px;margin-top:10px;color:var(--text)">← Voltar</button></div></div>';
+  }
+  return'<div class="screen fade-up"><div style="display:flex;align-items:center;gap:10px;margin-bottom:20px"><button class="btn btn-ghost" id="btnAdmBack" style="padding:8px 14px;font-size:13px;color:var(--text)">← Sair</button><h2 style="font-size:20px;font-weight:900;color:var(--text)">⚙️ Painel ADM</h2></div>'
+    +'<div class="card" style="padding:20px;margin-bottom:20px"><h3 style="font-weight:800;font-size:16px;margin-bottom:14px;color:var(--text)">➕ Adicionar Videoaula</h3><div style="display:flex;flex-direction:column;gap:10px"><input class="inp" id="vaTitulo" placeholder="Título da aula *"/><input class="inp" id="vaUrl" placeholder="Link YouTube *"/><input class="inp" id="vaDesc" placeholder="Descrição"/><div style="display:flex;gap:8px"><select class="inp" id="vaBanca" style="flex:1">'+bancas.map(function(b){return'<option value="'+b+'">'+(b||"Banca")+'</option>';}).join("")+'</select><select class="inp" id="vaDisciplina" style="flex:1">'+discs.map(function(d){return'<option value="'+d+'">'+(d||"Disciplina")+'</option>';}).join("")+'</select></div><input class="inp" id="vaOrdem" placeholder="Ordem" type="number" value="0"/><button class="btn btn-pink" id="btnAdmAddVA" style="padding:14px;font-size:15px">➕ Adicionar Videoaula</button></div></div>'
+    +'<h3 style="font-weight:800;font-size:16px;margin-bottom:12px;color:var(--text)">🎬 Videoaulas ('+state.videoaulas.length+')</h3>'
+    +'<div style="display:flex;flex-direction:column;gap:8px">'+state.videoaulas.map(function(v){return'<div class="card" style="padding:14px;display:flex;align-items:center;gap:10px"><div style="flex:1"><p style="font-weight:700;font-size:13px;color:var(--text)">'+v.titulo+'</p><div style="display:flex;gap:4px;margin-top:4px">'+chip(v.banca?"🏦 "+v.banca:"")+chip(v.ativo?"✓ Ativo":"✕ Inativo")+'</div></div><button class="btn btn-ghost" data-admtoggle="'+v.id+'" data-admativo="'+v.ativo+'" style="padding:4px 10px;font-size:11px;color:var(--text)">'+(v.ativo?"Pausar":"Ativar")+'</button><button class="btn btn-danger" data-admdel="'+v.id+'" style="padding:4px 10px;font-size:11px">🗑</button></div>';}).join("")+'</div>'
+  +'</div>';
+}
+
+async function handleAuth(){
+  var nome=document.getElementById("aNome")?document.getElementById("aNome").value:"";
+  var email=document.getElementById("aEmail")?document.getElementById("aEmail").value:"";
+  var senha=document.getElementById("aSenha")?document.getElementById("aSenha").value:"";
+  var ufEl=document.getElementById("aUf");var uf=ufEl?ufEl.value:"SP";
+  if(!email||!senha){showToast("Preencha todos os campos","e");return;}
+  if(state.aMode==="register"&&!nome){showToast("Informe seu nome","e");return;}
+  setState({aLoading:true});
+  if(state.aMode==="register"){
+    var r=await registerUser(nome,email,senha,uf);
+    if(!r.ok){showToast(r.msg,"e");setState({aLoading:false});return;}
+    showToast("Conta criada! Bem-vinda! 🎓");
+    setState({user:r.user,plano:r.user.plano||'ferreiro',scr:"home",aLoading:false});
+    loadUserData(r.user);
+  }else{
+    var r=await loginUser(email,senha);
+    if(!r.ok){showToast(r.msg,"e");setState({aLoading:false});return;}
+    showToast("Olá, "+r.user.nome+"! 👋");
+    setState({user:r.user,plano:r.user.plano||'ferreiro',scr:"home",aLoading:false});
+    loadUserData(r.user);
+  }
+}
+
+async function loadUserData(user){
+  var results=await Promise.all([loadTasksAPI(user.id),loadQuizHistoryAPI(user.id)]);
+  setState({tasks:results[0],qHistory:results[1]});
+  if(hasAccess('libaneo'))loadConcursos(user.uf);
+  setState({eLoading:true});
+  loadEbooksAPI().then(function(ebooks){setState({ebooks:ebooks,eLoading:false});});
+  var params=new URLSearchParams(window.location.search);
+  if(params.get('assinatura')==='sucesso'){showToast('Pagamento confirmado! 🎉');window.history.replaceState({},'',window.location.pathname);}
+}
+
+function navTo(scr){
+  if(scr==="simulados"){setState({scr:"simulados",simQuiz:null,simDone:false});return;}
+  if(scr==="videoaulas"){
+    if(!hasAccess('piaget')){setState({upgModal:true,upgPlano:'piaget'});return;}
+    setState({scr:"videoaulas",selVideoaula:null,vLoading:true});
+    loadVideoaulasAPI().then(function(v){setState({videoaulas:v,vLoading:false});});
+    return;
+  }
+  if(scr==="vagas"){
+    setState({scr:"vagas",selVaga:null});
+    if(state.concursos.length===0&&!state.cLoading&&state.user)loadConcursos(state.user.uf);
+    return;
+  }
+  if(scr==="ebooks"){
+    setState({scr:"ebooks",selEbook:null,eLoading:true});
+    loadEbooksAPI().then(function(e){setState({ebooks:e,eLoading:false});});
+    return;
+  }
+  setState({scr:scr,selVaga:null,selVideoaula:null});
+}
+
+async function iniciarQuiz(banca){setState({bancaSel:banca,qIdx:0,qAns:null,qScore:0,qDone:false,scr:"quiz_jogo"});}
+
+async function responder(idx){
+  if(state.qAns!==null)return;
+  var questoes=QUIZ_BANCAS[state.bancaSel].questoes;
+  var correta=questoes[state.qIdx].r===idx;
+  var novoScore=correta?state.qScore+1:state.qScore;
+  setState({qAns:idx,qScore:novoScore});
+  setTimeout(async function(){
+    if(state.qIdx+1<questoes.length){setState({qIdx:state.qIdx+1,qAns:null});}
+    else{
+      var novoH={banca:state.bancaSel,score:novoScore,total:questoes.length,data:new Date().toLocaleDateString("pt-BR")};
+      await saveQuizResultAPI(state.user.id,state.bancaSel,novoScore,questoes.length);
+      setState({qDone:true,qHistory:[novoH,...state.qHistory].slice(0,20)});
+    }
+  },1100);
+}
+
+function bindEvents(){
+  var $=function(id){return document.getElementById(id);};
+  var on=function(id,ev,fn){var el=$(id);if(el)el.addEventListener(ev,fn);};
+
+  on("authTabLogin","click",function(){setState({aMode:"login",_showPwd:false});});
+  on("authTabReg","click",function(){setState({aMode:"register",_showPwd:false});});
+  on("authSwitch","click",function(){setState({aMode:"register"});});
+  on("authSwitch2","click",function(){setState({aMode:"login"});});
+  on("btnAuth","click",handleAuth);
+  on("aSenha","keydown",function(e){if(e.key==="Enter")handleAuth();});
+  on("btnTogglePwd","click",function(){var inp=$("aSenha");if(!inp)return;setState({_showPwd:inp.type==='password'});});
+
+  on("btnUpgOk","click",async function(){
+    var plano=state.upgPlano||'libaneo';var p=PLANOS[plano];
+    if(state.user){var ok=await assinarPlano(state.user.id,state.user.email,state.user.nome,plano,p.preco);if(!ok)showToast("Erro ao abrir pagamento.","e");}
+    setState({upgModal:false});
+  });
+  on("btnUpgX","click",function(){setState({upgModal:false,scr:"planos"});});
+  var ov=document.getElementById("upgOverlay");
+  if(ov)ov.addEventListener("click",function(e){if(e.target.id==="upgOverlay")setState({upgModal:false});});
+
+  document.querySelectorAll("[data-nav]").forEach(function(btn){btn.addEventListener("click",function(){navTo(btn.dataset.nav);});});
+  on("btnPlanoBadge","click",function(){setState({scr:"planos"});});
+  on("btnVerPlanos","click",function(){setState({scr:"planos"});});
+  on("btnUpgradeLibaneo","click",function(){setState({upgModal:true,upgPlano:'libaneo'});});
+  on("btnUpgLibaneo","click",function(){setState({scr:"planos"});});
+  on("btnUpgVygotsky","click",function(){setState({upgModal:true,upgPlano:'vygotsky'});});
+  on("btnUpgPiaget","click",function(){setState({upgModal:true,upgPlano:'piaget'});});
+
+  document.querySelectorAll("[data-upgplano]").forEach(function(btn){btn.addEventListener("click",async function(){
+    var plano=btn.dataset.upgplano;var p=PLANOS[plano];
+    if(state.user){var ok=await assinarPlano(state.user.id,state.user.email,state.user.nome,plano,p.preco);if(!ok)showToast("Erro ao abrir pagamento.","e");}
+  });});
+
+  on("btnVagaBack","click",function(){setState({selVaga:null});});
+  on("btnVagasRefresh","click",function(){if(!state.cLoading&&state.user)loadConcursos(state.user.uf);});
+  document.querySelectorAll("[data-vagaidx]").forEach(function(btn){btn.addEventListener("click",function(){setState({selVaga:state.concursos[parseInt(btn.dataset.vagaidx)]});});});
+  document.querySelectorAll("[data-vaga]").forEach(function(btn){btn.addEventListener("click",function(){setState({selVaga:state.concursos[parseInt(btn.dataset.vaga)],scr:"vagas"});});});
+
+  document.querySelectorAll("[data-banca]").forEach(function(btn){btn.addEventListener("click",function(){iniciarQuiz(btn.dataset.banca);});});
+  on("btnQuizSair","click",function(){setState({scr:"quiz",bancaSel:null});});
+  on("btnQuizRefaz","click",function(){iniciarQuiz(state.bancaSel);});
+  on("btnQuizOutras","click",function(){setState({scr:"quiz",bancaSel:null});});
+  document.querySelectorAll("[data-opt]").forEach(function(btn){btn.addEventListener("click",function(){responder(parseInt(btn.dataset.opt));});});
+
+  on("btnVABack","click",function(){setState({selVideoaula:null});});
+  document.querySelectorAll("[data-va]").forEach(function(btn){btn.addEventListener("click",function(){setState({selVideoaula:state.videoaulas[parseInt(btn.dataset.va)]});});});
+
+  on("btnAddTask","click",async function(){
+    var val=$("novaTask")?$("novaTask").value.trim():"";if(!val)return;
+    var nova=await addTaskAPI(state.user.id,val);
+    if(nova){setState({tasks:[...state.tasks,nova]});showToast("Tarefa adicionada! ✅");}
+  });
+  on("novaTask","keydown",async function(e){
+    if(e.key==="Enter"){var val=e.target.value.trim();if(!val)return;var nova=await addTaskAPI(state.user.id,val);if(nova){setState({tasks:[...state.tasks,nova]});showToast("Adicionada! ✅");}}
+  });
+  document.querySelectorAll("[data-filtro]").forEach(function(btn){btn.addEventListener("click",function(){setState({filtroTask:btn.dataset.filtro});});});
+  document.querySelectorAll("[data-taskid]").forEach(function(btn){btn.addEventListener("click",async function(){
+    var t=state.tasks.find(function(x){return x.id===btn.dataset.taskid;});if(!t)return;
+    var novas=state.tasks.map(function(x){return x.id===btn.dataset.taskid?Object.assign({},x,{feita:!x.feita}):x;});
+    await toggleTaskAPI(state.user.id,btn.dataset.taskid,!t.feita);setState({tasks:novas});
+  });});
+  document.querySelectorAll("[data-deltask]").forEach(function(btn){btn.addEventListener("click",async function(){
+    await deleteTaskAPI(state.user.id,btn.dataset.deltask);
+    setState({tasks:state.tasks.filter(function(t){return t.id!==btn.dataset.deltask;})});showToast("Tarefa removida");
+  });});
+  on("btnClearDone","click",async function(){
+    var qtd=state.tasks.filter(function(t){return t.feita;}).length;
+    await clearDoneTasksAPI(state.user.id);
+    setState({tasks:state.tasks.filter(function(t){return!t.feita;})});showToast(qtd+" tarefa(s) removida(s)");
+  });
+
+  on("perfilUf","change",async function(e){
+    var novoUf=e.target.value;setState({user:Object.assign({},state.user,{uf:novoUf})});
+    if(hasAccess('libaneo'))loadConcursos(novoUf);showToast("Monitorando "+UF[novoUf]+"! 📡");
+  });
+  on("btnThemePerfil","click",function(){setState({theme:state.theme==="dark"?"light":"dark"});});
+  on("_themeToggle","click",function(){setState({theme:state.theme==="dark"?"light":"dark"});});
+  on("btnLogout","click",function(){setState({user:null,scr:"auth",aMode:"login",concursos:[],tasks:[],qHistory:[],cFonte:"",selVaga:null,plano:"ferreiro"});});
+  on("btnAdmAccess","click",function(){setState({scr:"adm",admAuthed:false,admPass:""});});
+
+  on("btnAdmLogin","click",async function(){
+    var pass=$("admPassInput")?$("admPassInput").value:"";
+    var test=await fetch(window.location.origin+'/api/videoaulas',{method:'POST',headers:{'Content-Type':'application/json','x-admin-password':pass},body:JSON.stringify({titulo:"_test_",youtube_url:"https://youtu.be/test"})});
+    var testR=await test.json();
+    if(testR.error&&testR.error.toLowerCase().includes("senha")){showToast("Senha incorreta","e");return;}
+    if(testR.videoaula)await api('videoaulas',{method:'DELETE',headers:{'x-admin-password':pass},body:{id:testR.videoaula.id}});
+    setState({admAuthed:true,admPass:pass,vLoading:true});
+    loadVideoaulasAPI().then(function(v){setState({videoaulas:v,vLoading:false});});
+  });
+  on("admPassInput","keydown",function(e){if(e.key==="Enter")$("btnAdmLogin")&&$("btnAdmLogin").click();});
+  on("btnAdmBack","click",function(){setState({scr:"perfil",admAuthed:false});});
+
+  on("btnAdmAddVA","click",async function(){
+    var titulo=$("vaTitulo")?$("vaTitulo").value.trim():"";
+    var youtube_url=$("vaUrl")?$("vaUrl").value.trim():"";
+    var descricao=$("vaDesc")?$("vaDesc").value.trim():"";
+    var banca=$("vaBanca")?$("vaBanca").value:"";
+    var disciplina=$("vaDisciplina")?$("vaDisciplina").value:"";
+    var ordem=parseInt($("vaOrdem")?$("vaOrdem").value:0)||0;
+    if(!titulo||!youtube_url){showToast("Título e URL obrigatórios","e");return;}
+    setState({vLoading:true});
+    var r=await addVideoaulaAPI(state.admPass,{titulo,descricao,youtube_url,banca,disciplina,ordem});
+    if(r.error){showToast(r.error,"e");setState({vLoading:false});return;}
+    var v=await loadVideoaulasAPI();setState({videoaulas:v,vLoading:false});showToast("Videoaula adicionada! 🎬");
+  });
+  document.querySelectorAll("[data-admtoggle]").forEach(function(btn){btn.addEventListener("click",async function(){
+    var ativo=btn.dataset.admativo==="true";setState({vLoading:true});
+    await toggleVideoaulaAPI(state.admPass,btn.dataset.admtoggle,!ativo);
+    var v=await loadVideoaulasAPI();setState({videoaulas:v,vLoading:false});
+  });});
+  document.querySelectorAll("[data-admdel]").forEach(function(btn){btn.addEventListener("click",async function(){
+    if(!confirm("Remover esta videoaula?"))return;setState({vLoading:true});
+    await deleteVideoaulaAPI(state.admPass,btn.dataset.admdel);
+    var v=await loadVideoaulasAPI();setState({videoaulas:v,vLoading:false});showToast("Videoaula removida");
+  });});
+
+  on("btnEbookBack","click",function(){setState({selEbook:null});});
+  document.querySelectorAll("[data-ebidx]").forEach(function(btn){btn.addEventListener("click",function(){setState({selEbook:state.ebooks[parseInt(btn.dataset.ebidx)]});});});
+
+  // Simulados bindings
+  document.querySelectorAll('[data-simmod]').forEach(function(btn){btn.addEventListener('click',function(){selectSimMod(parseInt(btn.dataset.simmod));});});
+  document.querySelectorAll('[data-simbanca]').forEach(function(btn){btn.addEventListener('click',function(){selectSimBanca(btn.dataset.simbanca);});});
+  document.querySelectorAll('[data-simans]').forEach(function(btn){btn.addEventListener('click',function(){answerSim(parseInt(btn.dataset.simans));});});
+  on('btnStartSim','click',function(){startSimulado();});
+  on('btnSimSair','click',function(){setState({simQuiz:null,simDone:false});});
+  on('btnSimPrev','click',function(){prevSimQ();});
+  on('btnSimNext','click',function(){nextSimQ();});
+  on('btnSimRefaz','click',function(){startSimulado();});
+  on('btnSimVoltar','click',function(){setState({simQuiz:null,simDone:false});});
+
+  // setup 3D tilt on auth
+  (function setup3DTilt(){
+    var wrap=document.getElementById('auth3dWrap');var card=document.getElementById('authCardContainer');
+    if(!wrap||!card)return;
+    wrap.addEventListener('mousemove',function(e){
+      var r=wrap.getBoundingClientRect();
+      var dx=(e.clientX-r.left-r.width/2)/(r.width/2);var dy=(e.clientY-r.top-r.height/2)/(r.height/2);
+      card.style.transition='transform .06s ease';card.style.transform='perspective(900px) rotateX('+(-dy*7)+'deg) rotateY('+(dx*7)+'deg)';
+    },{passive:true});
+    wrap.addEventListener('mouseleave',function(){card.style.transition='transform .55s ease';card.style.transform='perspective(900px) rotateX(0deg) rotateY(0deg)';});
+  })();
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
