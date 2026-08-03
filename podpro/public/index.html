@@ -843,7 +843,7 @@ function renderPlanos(){
       const access=(PLANOS[f.plano]?.nivel??0)<=(p.nivel??0);
       return'<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">'
         +'<span style="flex-shrink:0;font-size:15px;font-weight:900;color:'+(access?p.check:'rgba(61,26,5,.2)')+';">'+(access?'✓':'—')+'</span>'
-        +'<span style="font-size:13px;font-weight:600;line-height:1.4;color:'+(access?'#3D1A05':'rgba(61,26,5,.35)')+'">'+f.lb+'</span>'
+        +'<span style="font-size:13px;font-weight:600;line-height:1.4;color:'+(access?'var(--text)':'var(--text-muted)')+'">'+f.lb+'</span>'
       +'</div>';
     }).join('');
   }
@@ -894,6 +894,127 @@ function renderPlanos(){
     +'</div>'
   +'</div>'+renderNav("planos");
 }
+
+
+function renderEbooks(){
+  if(state.selEbook){
+    var eb=state.selEbook;
+    var CATS={geral:"📖",bncc:"📘",legislacao:"⚖️",autores:"✍️",resumo:"📋"};
+    return'<div class="screen fade-up"><button class="btn btn-ghost" id="btnEbookBack" style="padding:8px 16px;font-size:13px;margin-bottom:18px;color:var(--text)">← Voltar</button>'
+      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span style="font-size:28px">'+(CATS[eb.categoria]||"📖")+'</span><h2 style="font-size:20px;font-weight:900;color:var(--text);line-height:1.3">'+eb.titulo+'</h2></div>'
+      +(eb.descricao?'<p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">'+eb.descricao+'</p>':'')
+      +(eb.pdf_url?'<a href="'+eb.pdf_url+'" target="_blank" rel="noreferrer" style="display:flex;align-items:center;gap:10px;background:var(--pink);color:#fff;border-radius:14px;padding:14px 18px;text-decoration:none;font-weight:800;font-size:14px;margin-bottom:16px"><span style="font-size:20px">📄</span>Abrir PDF em nova aba</a>':'')
+      +(eb.conteudo?'<div class="card" style="padding:20px 18px"><div style="color:var(--text);font-size:14px;line-height:1.8;white-space:pre-wrap">'+eb.conteudo+'</div></div>':'')
+    +'</div>'+renderNav("vagas");
+  }
+  var CAT_IC={geral:"📖",bncc:"📘",legislacao:"⚖️",autores:"✍️",resumo:"📋"};
+  return'<div class="screen fade-up">'
+    +'<h2 style="font-size:24px;font-weight:900;background:linear-gradient(120deg,var(--text) 20%,#C4521A 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px">📚 E-books & Materiais</h2>'
+    +'<p style="color:var(--text-muted);font-size:13px;margin-bottom:14px">Conteúdo exclusivo para sua preparação</p>'
+    +(state.eLoading?'<div style="text-align:center;padding:40px 0"><div class="loader spin" style="margin:0 auto"></div></div>'
+      :state.ebooks.length===0?'<div style="text-align:center;padding:40px 0;color:var(--text-muted)"><span style="font-size:46px">📚</span><p style="margin-top:12px;font-size:14px">Nenhum material disponível ainda.</p></div>'
+      :'<div style="display:flex;flex-direction:column;gap:12px">'+state.ebooks.map(function(eb,i){
+        return'<button class="btn card" data-ebidx="'+i+'" style="padding:18px;text-align:left;width:100%">'
+          +'<div style="display:flex;align-items:flex-start;gap:12px">'
+            +'<span style="font-size:32px">'+(CAT_IC[eb.categoria]||"📖")+'</span>'
+            +'<div style="flex:1">'
+              +'<p style="font-weight:800;font-size:15px;color:var(--text);line-height:1.35">'+eb.titulo+'</p>'
+              +(eb.descricao?'<p style="color:var(--text-muted);font-size:12px;margin-top:4px">'+eb.descricao.slice(0,80)+'</p>':'')
+              +'<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">'+chip(eb.pdf_url?"📄 PDF":eb.conteudo?"📝 Texto":"")+chip(eb.categoria&&eb.categoria!=="geral"?eb.categoria:"")+'</div>'
+            +'</div>'
+            +'<span style="color:var(--pink);font-size:20px;margin-top:4px">›</span>'
+          +'</div>'
+        +'</button>';
+      }).join('')+'</div>'
+    )
+  +'</div>'+renderNav("vagas");
+}
+
+function selectSimMod(id){setState({simModId:id,simBanca:'TODAS',simQuiz:null,simDone:false});}
+function selectSimBanca(b){setState({simBanca:b,simQuiz:null,simDone:false});}
+function startSimulado(){
+  var mod=SIMULADOS.find(function(m){return m.id===state.simModId;});
+  var pool=state.simBanca==='TODAS'?mod.questoes:mod.questoes.filter(function(q){return q.b===state.simBanca;});
+  if(!pool.length){showToast('Sem questões para esta banca','e');return;}
+  var used=simGetUsed(state.simModId,state.simBanca);
+  var available=pool.filter(function(q){return used.indexOf(q.id)===-1;});
+  if(available.length<Math.min(5,pool.length)){used=[];available=pool.slice();}
+  var selected=simShuffle(available).slice(0,Math.min(10,available.length));
+  simSetUsed(state.simModId,state.simBanca,used.concat(selected.map(function(q){return q.id;})));
+  setState({simQuiz:{qs:selected,cur:0,ans:new Array(selected.length).fill(null),done:new Array(selected.length).fill(false)},simDone:false});
+}
+function answerSim(idx){
+  var quiz=state.simQuiz;if(!quiz||quiz.done[quiz.cur])return;
+  var a=quiz.ans.slice();a[quiz.cur]=idx;var d=quiz.done.slice();d[quiz.cur]=true;
+  setState({simQuiz:Object.assign({},quiz,{ans:a,done:d})});
+}
+function nextSimQ(){var quiz=state.simQuiz;if(!quiz)return;if(quiz.cur<quiz.qs.length-1){setState({simQuiz:Object.assign({},quiz,{cur:quiz.cur+1})});}else{finishSim();}}
+function prevSimQ(){var quiz=state.simQuiz;if(!quiz||quiz.cur===0)return;setState({simQuiz:Object.assign({},quiz,{cur:quiz.cur-1})});}
+function finishSim(){
+  var quiz=state.simQuiz;if(!quiz)return;
+  var acc=0;quiz.ans.forEach(function(a,i){if(a===quiz.qs[i].c)acc++;});
+  var pct=Math.round(acc/quiz.qs.length*100);
+  var prev=simGetBest(state.simModId);if(prev===null||pct>prev)simSetBest(state.simModId,pct);
+  var hist=simGetHist(state.simModId);hist.push({b:state.simBanca,pct:pct,a:acc,t:quiz.qs.length});
+  if(hist.length>12)hist=hist.slice(-12);simSetHist(state.simModId,hist);
+  setState({simDone:true,simQuiz:quiz});
+}
+function renderSimulados(){
+  var mod=SIMULADOS.find(function(m){return m.id===state.simModId;});
+  var quiz=state.simQuiz;
+  if(quiz&&!state.simDone){
+    var q=quiz.qs[quiz.cur];var answered=quiz.done[quiz.cur];
+    var pct=Math.round((quiz.cur/quiz.qs.length)*100);
+    var opts=q.op.map(function(op,i){var cls='quiz-opt';if(answered){if(i===q.c)cls+=' correct';else if(i===quiz.ans[quiz.cur])cls+=' wrong';}return'<button class="'+cls+'" '+(answered?'disabled':'')+' onclick="answerSim('+i+')" style="text-align:left;width:100%"><span style="color:#C4521A;font-weight:900;margin-right:8px">'+String.fromCharCode(65+i)+')</span>'+op+'</button>';}).join('');
+    return'<div class="screen fade-up"><div style="display:flex;align-items:center;gap:10px;margin-bottom:16px"><button class="btn btn-ghost" onclick="setState({simQuiz:null,simDone:false})" style="padding:7px 14px;font-size:13px;color:var(--text)">← Sair</button><span style="background:linear-gradient(135deg,#C4521A,#8A3A13);color:#fff;border-radius:20px;padding:4px 14px;font-size:12px;font-weight:800">Módulo '+mod.id+'</span></div>'
+      +'<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="color:var(--text-muted);font-size:13px">Questão '+(quiz.cur+1)+' de '+quiz.qs.length+'</span><span style="color:#C4521A;font-weight:700;font-size:13px">'+q.b+'</span></div>'
+      +'<div class="progress-wrap" style="margin-bottom:16px"><div class="progress-bar" style="background:linear-gradient(90deg,#C4521A,#E07B00);width:'+pct+'%"></div></div>'
+      +'<div class="card" style="padding:20px;margin-bottom:14px;border-left:4px solid #C4521A"><p style="font-weight:700;font-size:15px;line-height:1.65;color:var(--text)">'+q.q+'</p></div>'
+      +'<div style="display:flex;flex-direction:column;gap:10px">'+opts+'</div>'
+      +(answered&&q.e?'<div style="margin-top:14px;padding:13px;border-radius:12px;background:rgba(196,82,26,.1);border:1px solid rgba(196,82,26,.25);font-size:13px;color:var(--text-sec)">💡 '+q.e+'</div>':'')
+      +'<div style="display:flex;justify-content:space-between;margin-top:20px;gap:10px">'
+        +'<button class="btn btn-ghost" onclick="prevSimQ()" '+(quiz.cur===0?'disabled style="opacity:.4"':'')+' style="padding:12px 20px;font-size:14px;color:var(--text)">← Anterior</button>'
+        +(answered?'<button class="btn btn-pink" onclick="nextSimQ()" style="padding:12px 24px;font-size:14px">'+(quiz.cur===quiz.qs.length-1?'Ver resultado →':'Próxima →')+'</button>':'')
+      +'</div></div>'+renderNav('simulados');
+  }
+  if(quiz&&state.simDone){
+    var acc=0;quiz.ans.forEach(function(a,i){if(a===quiz.qs[i].c)acc++;});
+    var pct=Math.round(acc/quiz.qs.length*100);
+    var msg=pct>=80?'Excelente! 🎉':pct>=60?'Bom resultado! 💪':'Continue revisando! 📚';
+    return'<div class="screen fade-up"><div style="text-align:center;margin-bottom:20px">'
+      +'<div style="width:120px;height:120px;border-radius:50%;margin:0 auto 14px;background:conic-gradient(#C4521A '+pct+'%,var(--border) 0);position:relative;display:flex;align-items:center;justify-content:center"><div style="position:absolute;inset:12px;border-radius:50%;background:var(--card-bg);display:flex;flex-direction:column;align-items:center;justify-content:center"><span style="font-size:26px;font-weight:900;color:var(--text)">'+pct+'%</span><span style="font-size:10px;color:var(--text-muted)">acerto</span></div></div>'
+      +'<h3 style="font-size:21px;font-weight:900;color:var(--text)">'+acc+' de '+quiz.qs.length+' corretas</h3>'
+      +'<p style="color:var(--text-muted);font-size:14px;margin-top:6px">'+msg+'</p></div>'
+      +'<div style="display:flex;gap:10px;margin-bottom:18px"><button class="btn btn-pink" onclick="startSimulado()" style="flex:1;padding:13px;font-size:14px">↺ Novo simulado</button><button class="btn btn-ghost" onclick="setState({simQuiz:null,simDone:false})" style="flex:1;padding:13px;font-size:14px;color:var(--text)">↩ Módulos</button></div>'
+      +'<div style="display:flex;flex-direction:column;gap:8px">'+quiz.qs.map(function(q,i){var ok=quiz.ans[i]===q.c;return'<div class="card" style="padding:12px 14px;border-left:3px solid '+(ok?'#4E7A2F':'#dc2626')+'"><p style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:4px">'+(i+1)+'. '+q.q+'</p><p style="font-size:12px;font-weight:700;color:'+(ok?'#4E7A2F':'#dc2626')+'">'+(ok?'✔ ':'✘ ')+q.op[q.c]+'</p></div>';}).join('')+'</div>'
+    +'</div>'+renderNav('simulados');
+  }
+  var bestAll={};SIMULADOS.forEach(function(m){bestAll[m.id]=simGetBest(m.id);});
+  var trailHtml='<div style="overflow-x:auto;margin:0 -18px;padding:4px 18px 20px;-webkit-overflow-scrolling:touch"><div style="display:flex;align-items:center;min-width:max-content;gap:0;padding:8px 4px">'
+    +SIMULADOS.map(function(m,i){var best=bestAll[m.id];var isAct=m.id===state.simModId;var mastered=best!==null&&best>=70;
+      var conn=i>0?'<div style="width:20px;height:3px;border-radius:2px;margin:0 2px;background:'+(bestAll[SIMULADOS[i-1].id]!==null?'rgba(196,82,26,.4)':'var(--border)')+'"></div>':'';
+      return conn+'<button onclick="selectSimMod('+m.id+')" style="width:50px;height:50px;border-radius:50%;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:Nunito,sans-serif;flex-shrink:0;position:relative;background:'+(isAct?'linear-gradient(135deg,#C4521A,#8A3A13)':mastered?'linear-gradient(135deg,#4E7A2F,#2A4A18)':'var(--card-bg)')+';border:2px solid '+(isAct?'#C4521A':mastered?'#4E7A2F':'var(--border)')+';box-shadow:'+(isAct?'0 6px 20px rgba(196,82,26,.45)':mastered?'0 4px 14px rgba(78,122,47,.35)':'var(--shadow)')+';transform:'+(isAct?'translateY(-5px) scale(1.12)':'none')+';color:'+(isAct||mastered?'#fff':'var(--text)')+'"><span style="font-size:16px;font-weight:900">'+m.id+'</span><span style="font-size:8px;opacity:.8">'+(best!==null?best+'%':'—')+'</span>'+(mastered&&!isAct?'<span style="position:absolute;top:-4px;right:-4px;width:15px;height:15px;border-radius:50%;background:#4E7A2F;color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center">✓</span>':'')+'</button>';
+    }).join('')+'</div></div>';
+  var bancas=['TODAS'].concat([...new Set(mod.questoes.map(function(q){return q.b;}))]);
+  var bancaHtml=bancas.map(function(b){var n=b==='TODAS'?mod.questoes.length:mod.questoes.filter(function(q){return q.b===b;}).length;var act=state.simBanca===b;return'<button onclick="selectSimBanca(\''+b+'\')" style="padding:7px 13px;border-radius:50px;border:1.5px solid '+(act?'#C4521A':'var(--border)')+';background:'+(act?'linear-gradient(135deg,#C4521A,#8A3A13)':'var(--card-bg)')+';color:'+(act?'#fff':'var(--text)')+';font-family:Nunito,sans-serif;font-size:12px;font-weight:700;cursor:pointer">'+b+' ('+n+')</button>';}).join('');
+  var hist=simGetHist(state.simModId).slice(-4).reverse();
+  var histHtml=hist.length?'<div style="margin-top:14px"><p style="font-size:11px;color:#C4521A;font-weight:900;letter-spacing:.8px;margin-bottom:8px">TENTATIVAS ANTERIORES</p>'+hist.map(function(h){return'<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="font-size:12px;color:var(--text-sec)">'+h.b+'</span><span style="font-size:13px;font-weight:800;color:'+(h.pct>=70?'#4E7A2F':'#C4521A')+'">'+h.pct+'% ('+h.a+'/'+h.t+')</span></div>';}).join('')+'</div>':'';
+  var bestMod=bestAll[state.simModId];
+  return'<div class="screen fade-up"><h2 style="font-size:24px;font-weight:900;background:linear-gradient(120deg,var(--text) 20%,#C4521A 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px">🎓 Trilha de Simulados</h2><p style="color:var(--text-muted);font-size:13px;margin-bottom:4px">'+SIMULADOS.length+' módulos · '+SIMULADOS.reduce(function(a,m){return a+m.questoes.length;},0)+' questões</p>'
+    +trailHtml
+    +'<div class="card" style="padding:20px 18px"><p style="font-size:10px;color:#C4521A;font-weight:900;letter-spacing:1px;margin-bottom:6px">MÓDULO '+state.simModId+' DE '+SIMULADOS.length+'</p><h3 style="font-size:18px;font-weight:900;color:var(--text);margin-bottom:12px">'+mod.titulo+'</h3>'
+    +'<div style="display:flex;gap:10px;margin-bottom:14px"><div style="background:var(--inp-bg);border-radius:10px;padding:8px 12px;text-align:center;flex:1"><p style="font-size:9px;color:var(--text-muted);font-weight:700">QUESTÕES</p><p style="font-size:22px;font-weight:900;color:#C4521A">'+mod.questoes.length+'</p></div><div style="background:var(--inp-bg);border-radius:10px;padding:8px 12px;text-align:center;flex:1"><p style="font-size:9px;color:var(--text-muted);font-weight:700">POR SIMULADO</p><p style="font-size:22px;font-weight:900;color:#1B3A6B">10</p></div><div style="background:'+(bestMod!==null?'rgba(78,122,47,.12)':'var(--inp-bg)')+';border-radius:10px;padding:8px 12px;text-align:center;flex:1"><p style="font-size:9px;color:var(--text-muted);font-weight:700">MELHOR</p><p style="font-size:22px;font-weight:900;color:'+(bestMod!==null?'#4E7A2F':'var(--text-muted)')+'">'+(bestMod!==null?bestMod+'%':'—')+'</p></div></div>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">'+bancaHtml+'</div>'
+    +'<button onclick="startSimulado()" class="btn btn-pink" style="width:100%;padding:14px;font-size:15px">▶ Iniciar Simulado</button>'
+    +histHtml+'</div></div>'+renderNav('simulados');
+}
+window.selectSimMod=function(id){selectSimMod(id);};
+window.selectSimBanca=function(b){selectSimBanca(b);};
+window.startSimulado=function(){startSimulado();};
+window.answerSim=function(idx){answerSim(idx);};
+window.nextSimQ=function(){nextSimQ();};
+window.prevSimQ=function(){prevSimQ();};
+window.finishSim=function(){finishSim();};
 
 function renderPerfil(){
   const uf=state.user?state.user.uf:"SP";
