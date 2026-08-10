@@ -1083,17 +1083,140 @@ function renderPerfil(){
 }
 
 function renderAdm(){
+  var $=function(id){return document.getElementById(id);};
   var bancas=["","VUNESP","FCC","CEBRASPE","FGV","IBFC","AOCP","FAFIPA","FUNDATEC"];
-  var discs=["","Matemática","Língua Portuguesa","Ciências","História","Geografia","Pedagogia","Geral"];
+  var discs=["","Pedagogia","Matemática","Língua Portuguesa","Ciências","História","Legislação","Geral"];
+  var CATS=[{k:"geral",l:"📖 Geral"},{k:"bncc",l:"📘 BNCC"},{k:"autores",l:"✍️ Autoras/Autores"},{k:"legislacao",l:"⚖️ Legislação"},{k:"resumo",l:"📋 Resumos"}];
+
   if(!state.admAuthed){
-    return'<div class="screen fade-up" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh"><div class="card" style="padding:28px 22px;width:100%;max-width:400px"><h2 style="font-size:22px;font-weight:900;margin-bottom:4px;text-align:center;color:var(--text)">⚙️ Painel ADM</h2><p style="color:var(--text-muted);font-size:13px;text-align:center;margin-bottom:20px">Acesso restrito</p><input class="inp" id="admPassInput" type="password" placeholder="Senha ADM" style="margin-bottom:12px"/><button class="btn btn-pink" id="btnAdmLogin" style="width:100%;padding:14px;font-size:15px">Entrar</button><button class="btn btn-ghost" id="btnAdmBack" style="width:100%;padding:12px;font-size:14px;margin-top:10px;color:var(--text)">← Voltar</button></div></div>';
+    return'<div class="screen fade-up" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh">'
+      +'<div class="card" style="padding:28px 22px;width:100%;max-width:400px">'
+        +'<h2 style="font-size:22px;font-weight:900;margin-bottom:4px;text-align:center;color:var(--text)">⚙️ Painel ADM</h2>'
+        +'<p style="color:var(--text-muted);font-size:13px;text-align:center;margin-bottom:20px">Acesso restrito ao administrador</p>'
+        +'<input class="inp" id="admPassInput" type="password" placeholder="Senha ADM" style="margin-bottom:12px"/>'
+        +'<button class="btn btn-pink" id="btnAdmLogin" style="width:100%;padding:14px;font-size:15px">Entrar</button>'
+        +'<button class="btn btn-ghost" id="btnAdmBack" style="width:100%;padding:12px;font-size:14px;margin-top:10px;color:var(--text)">← Voltar</button>'
+      +'</div>'
+    +'</div>';
   }
-  return'<div class="screen fade-up"><div style="display:flex;align-items:center;gap:10px;margin-bottom:20px"><button class="btn btn-ghost" id="btnAdmBack" style="padding:8px 14px;font-size:13px;color:var(--text)">← Sair</button><h2 style="font-size:20px;font-weight:900;color:var(--text)">⚙️ Painel ADM</h2></div>'
-    +'<div class="card" style="padding:20px;margin-bottom:20px"><h3 style="font-weight:800;font-size:16px;margin-bottom:14px;color:var(--text)">➕ Adicionar Videoaula</h3><div style="display:flex;flex-direction:column;gap:10px"><input class="inp" id="vaTitulo" placeholder="Título da aula *"/><input class="inp" id="vaUrl" placeholder="Link YouTube *"/><input class="inp" id="vaDesc" placeholder="Descrição"/><div style="display:flex;gap:8px"><select class="inp" id="vaBanca" style="flex:1">'+bancas.map(function(b){return'<option value="'+b+'">'+(b||"Banca")+'</option>';}).join("")+'</select><select class="inp" id="vaDisciplina" style="flex:1">'+discs.map(function(d){return'<option value="'+d+'">'+(d||"Disciplina")+'</option>';}).join("")+'</select></div><input class="inp" id="vaOrdem" placeholder="Ordem" type="number" value="0"/><button class="btn btn-pink" id="btnAdmAddVA" style="padding:14px;font-size:15px">➕ Adicionar Videoaula</button></div></div>'
+
+  // Tab bar
+  var tabs=[{k:'conteudo',l:'📚 Conteúdo'},{k:'videoaulas',l:'🎬 Videoaulas'},{k:'ebooks',l:'📖 E-books'}];
+  var tabBar='<div style="display:flex;gap:6px;margin-bottom:20px;background:var(--inp-bg);border-radius:50px;padding:4px">'
+    +tabs.map(function(t){var act=state.admTab===t.k;return'<button data-admtab="'+t.k+'" style="flex:1;padding:9px 6px;border:none;cursor:pointer;font-family:Nunito,sans-serif;font-weight:800;font-size:12px;border-radius:40px;transition:all .2s;background:'+(act?'linear-gradient(135deg,var(--pink),#A8185E)':'transparent')+';color:'+(act?'#fff':'var(--text-muted)')+'">'+t.l+'</button>';}).join('')
+  +'</div>';
+
+  var content='';
+
+  // ── ABA: CONTEÚDO POR PLANO ─────────────────────────────────────────────────
+  if(state.admTab==='conteudo'){
+    var planOrder=['ferreiro','libaneo','vygotsky','piaget'];
+    content='<p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">Gerencie quais materiais (e-books, PDFs, textos) aparecem para cada plano.</p>';
+    content+=planOrder.map(function(key){
+      var p=PLANOS[key];
+      var itens=state.ebooks.filter(function(e){return e.plano_minimo===key;});
+      return'<div style="margin-bottom:20px">'
+        +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">'
+          +'<div style="background:'+p.cor+';color:#fff;border-radius:12px;padding:6px 14px;font-size:13px;font-weight:900">'+p.emoji+' '+p.nome.toUpperCase()+'</div>'
+          +(key!=='ferreiro'?'<span style="font-size:12px;color:var(--text-muted)">R$ '+p.preco.toFixed(2).replace('.',',')+ '/mês</span>':'<span style="font-size:12px;color:var(--text-muted)">Gratuito</span>')
+        +'</div>'
+        +(itens.length===0?'<p style="color:var(--text-muted);font-size:13px;padding:10px;background:var(--inp-bg);border-radius:12px">Nenhum conteúdo neste plano ainda.</p>':'')
+        +'<div style="display:flex;flex-direction:column;gap:8px">'+itens.map(function(e){
+          return'<div class="card" style="padding:13px 15px;display:flex;align-items:flex-start;gap:10px;border-left:3px solid '+p.cor+'">'
+            +'<div style="flex:1"><p style="font-weight:700;font-size:14px;color:var(--text)">'+e.titulo+'</p>'
+            +'<p style="font-size:11px;color:var(--text-muted);margin-top:3px">'+e.categoria+(e.pdf_url?' · 📄 PDF':e.conteudo?' · 📝 Texto':'')+(e.ativo?'':' · ⚠️ Inativo')+'</p></div>'
+            +'<div style="display:flex;gap:6px;flex-shrink:0">'
+              +'<button data-admtoggle="'+e.id+'" data-admativo="'+e.ativo+'" style="background:var(--ghost-bg);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif">'+(e.ativo?'Pausar':'Ativar')+'</button>'
+              +'<button data-admdel="'+e.id+'" style="background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.2);color:#b91c1c;border-radius:10px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif">🗑</button>'
+            +'</div>'
+          +'</div>';
+        }).join('')+'</div>'
+        +'<button data-addconteudo="'+key+'" style="width:100%;margin-top:8px;padding:10px;border:2px dashed '+p.cor+'50;background:'+p.cor+'08;color:'+p.cor+';border-radius:12px;cursor:pointer;font-family:Nunito,sans-serif;font-weight:800;font-size:13px">+ Adicionar conteúdo '+p.nome+'</button>'
+      +'</div>';
+    }).join('');
+
+    // Form (shown when adding)
+    if(state.admEditId){
+      var planAlvo=state.admEditId;
+      var pAlvo=PLANOS[planAlvo];
+      content+='<div class="card" style="padding:20px;border:2px solid '+pAlvo.cor+'40;margin-top:8px" id="admAddForm">'
+        +'<h3 style="font-weight:900;font-size:16px;margin-bottom:14px;color:var(--text)">➕ Novo conteúdo — '+pAlvo.emoji+' '+pAlvo.nome+'</h3>'
+        +'<div style="display:flex;flex-direction:column;gap:10px">'
+          +'<input class="inp" id="cbTitulo" placeholder="Título do material *"/>'
+          +'<input class="inp" id="cbDesc" placeholder="Descrição curta"/>'
+          +'<select class="inp" id="cbCat">'+CATS.map(function(c){return'<option value="'+c.k+'">'+c.l+'</option>';}).join('')+'</select>'
+          +'<input class="inp" id="cbPdfUrl" placeholder="URL do PDF (Google Drive, Dropbox…) — opcional"/>'
+          +'<textarea class="inp" id="cbConteudo" rows="5" placeholder="Ou cole o texto do material aqui" style="border-radius:14px;resize:vertical;min-height:100px"></textarea>'
+          +'<input class="inp" id="cbOrdem" placeholder="Ordem (número)" type="number" value="0"/>'
+          +'<input type="hidden" id="cbPlano" value="'+planAlvo+'"/>'
+          +'<div style="display:flex;gap:8px">'
+            +'<button class="btn btn-pink" id="btnAdmSaveConteudo" style="flex:1;padding:13px;font-size:15px">💾 Salvar</button>'
+            +'<button class="btn btn-ghost" id="btnAdmCancelConteudo" style="flex:1;padding:13px;font-size:14px;color:var(--text)">Cancelar</button>'
+          +'</div>'
+        +'</div>'
+      +'</div>';
+    }
+  }
+
+  // ── ABA: VIDEOAULAS ─────────────────────────────────────────────────────────
+  if(state.admTab==='videoaulas'){
+    content='<div class="card" style="padding:20px;margin-bottom:20px">'
+      +'<h3 style="font-weight:800;font-size:16px;margin-bottom:14px;color:var(--text)">➕ Adicionar Videoaula</h3>'
+      +'<div style="display:flex;flex-direction:column;gap:10px">'
+        +'<input class="inp" id="vaTitulo" placeholder="Título da aula *"/>'
+        +'<input class="inp" id="vaUrl" placeholder="Link YouTube *"/>'
+        +'<input class="inp" id="vaDesc" placeholder="Descrição"/>'
+        +'<div style="display:flex;gap:8px">'
+          +'<select class="inp" id="vaBanca" style="flex:1">'+bancas.map(function(b){return'<option value="'+b+'">'+(b||"Banca")+'</option>';}).join("")+'</select>'
+          +'<select class="inp" id="vaDisciplina" style="flex:1">'+discs.map(function(d){return'<option value="'+d+'">'+(d||"Disciplina")+'</option>';}).join("")+'</select>'
+        +'</div>'
+        +'<input class="inp" id="vaOrdem" placeholder="Ordem" type="number" value="0"/>'
+        +'<button class="btn btn-pink" id="btnAdmAddVA" style="padding:14px;font-size:15px">➕ Adicionar</button>'
+      +'</div>'
+    +'</div>'
     +'<h3 style="font-weight:800;font-size:16px;margin-bottom:12px;color:var(--text)">🎬 Videoaulas ('+state.videoaulas.length+')</h3>'
-    +'<div style="display:flex;flex-direction:column;gap:8px">'+state.videoaulas.map(function(v){return'<div class="card" style="padding:14px;display:flex;align-items:center;gap:10px"><div style="flex:1"><p style="font-weight:700;font-size:13px;color:var(--text)">'+v.titulo+'</p><div style="display:flex;gap:4px;margin-top:4px">'+chip(v.banca?"🏦 "+v.banca:"")+chip(v.ativo?"✓ Ativo":"✕ Inativo")+'</div></div><button class="btn btn-ghost" data-admtoggle="'+v.id+'" data-admativo="'+v.ativo+'" style="padding:4px 10px;font-size:11px;color:var(--text)">'+(v.ativo?"Pausar":"Ativar")+'</button><button class="btn btn-danger" data-admdel="'+v.id+'" style="padding:4px 10px;font-size:11px">🗑</button></div>';}).join("")+'</div>'
+    +'<div style="display:flex;flex-direction:column;gap:8px">'+state.videoaulas.map(function(v){
+      return'<div class="card" style="padding:14px;display:flex;align-items:center;gap:10px">'
+        +'<div style="flex:1"><p style="font-weight:700;font-size:13px;color:var(--text)">'+v.titulo+'</p>'
+        +'<div style="display:flex;gap:4px;margin-top:4px">'+chip(v.banca?"🏦 "+v.banca:"")+chip(v.ativo?"✓ Ativo":"✕ Inativo")+'</div></div>'
+        +'<button data-admtoggle="'+v.id+'" data-admativo="'+v.ativo+'" style="background:var(--ghost-bg);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif">'+(v.ativo?"Pausar":"Ativar")+'</button>'
+        +'<button data-admdel="'+v.id+'" style="background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.2);color:#b91c1c;border-radius:10px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif">🗑</button>'
+      +'</div>';
+    }).join('')+'</div>';
+  }
+
+  // ── ABA: E-BOOKS (lista geral) ──────────────────────────────────────────────
+  if(state.admTab==='ebooks'){
+    content='<p style="color:var(--text-muted);font-size:13px;margin-bottom:14px">Lista completa de todos os materiais cadastrados.</p>'
+      +'<div style="display:flex;flex-direction:column;gap:8px">'+state.ebooks.map(function(e){
+        var p=PLANOS[e.plano_minimo]||PLANOS.ferreiro;
+        return'<div class="card" style="padding:13px 15px;display:flex;align-items:flex-start;gap:10px">'
+          +'<div style="flex:1">'
+            +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'
+              +'<span style="background:'+p.cor+';color:#fff;border-radius:8px;padding:1px 8px;font-size:9px;font-weight:900">'+p.nome.toUpperCase()+'</span>'
+              +(e.ativo?'':'<span style="background:rgba(220,38,38,.15);color:#b91c1c;border-radius:8px;padding:1px 8px;font-size:9px;font-weight:900">INATIVO</span>')
+            +'</div>'
+            +'<p style="font-weight:700;font-size:14px;color:var(--text)">'+e.titulo+'</p>'
+            +'<p style="font-size:11px;color:var(--text-muted);margin-top:2px">'+e.categoria+(e.pdf_url?' · PDF':e.conteudo?' · Texto':'')+'</p>'
+          +'</div>'
+          +'<div style="display:flex;gap:5px;flex-shrink:0">'
+            +'<button data-admtoggle="'+e.id+'" data-admativo="'+e.ativo+'" style="background:var(--ghost-bg);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif">'+(e.ativo?"Pausar":"Ativar")+'</button>'
+            +'<button data-admdel="'+e.id+'" style="background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.2);color:#b91c1c;border-radius:10px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif">🗑</button>'
+          +'</div>'
+        +'</div>';
+      }).join('')+'</div>';
+  }
+
+  return'<div class="screen fade-up">'
+    +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">'
+      +'<button class="btn btn-ghost" id="btnAdmBack" style="padding:8px 14px;font-size:13px;color:var(--text)">← Sair</button>'
+      +'<h2 style="font-size:20px;font-weight:900;color:var(--text)">⚙️ Painel ADM</h2>'
+    +'</div>'
+    +tabBar
+    +content
   +'</div>';
 }
+
 
 async function handleAuth(){
   var nome=document.getElementById("aNome")?document.getElementById("aNome").value:"";
@@ -1254,14 +1377,72 @@ function bindEvents(){
   on("btnLogout","click",function(){setState({user:null,scr:"auth",aMode:"login",concursos:[],tasks:[],qHistory:[],cFonte:"",selVaga:null,plano:"ferreiro"});});
   on("btnAdmAccess","click",function(){setState({scr:"adm",admAuthed:false,admPass:""});});
 
+  // ADM tabs
+  document.querySelectorAll('[data-admtab]').forEach(function(btn){
+    btn.addEventListener('click',function(){setState({admTab:btn.dataset.admtab,admEditId:null});});
+  });
+
+  // Conteúdo por plano: add button
+  document.querySelectorAll('[data-addconteudo]').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      setState({admEditId:btn.dataset.addconteudo,admTab:'conteudo'});
+      setTimeout(function(){var el=document.getElementById('admAddForm');if(el)el.scrollIntoView({behavior:'smooth'});},100);
+    });
+  });
+
+  // Save new conteudo
+  on('btnAdmSaveConteudo','click',async function(){
+    var titulo=document.getElementById('cbTitulo')?document.getElementById('cbTitulo').value.trim():'';
+    var desc=document.getElementById('cbDesc')?document.getElementById('cbDesc').value.trim():'';
+    var cat=document.getElementById('cbCat')?document.getElementById('cbCat').value:'geral';
+    var pdf=document.getElementById('cbPdfUrl')?document.getElementById('cbPdfUrl').value.trim():'';
+    var txt=document.getElementById('cbConteudo')?document.getElementById('cbConteudo').value.trim():'';
+    var ordem=document.getElementById('cbOrdem')?document.getElementById('cbOrdem').value:'0';
+    var plano=document.getElementById('cbPlano')?document.getElementById('cbPlano').value:'ferreiro';
+    if(!titulo){showToast('Título obrigatório','e');return;}
+    if(!pdf&&!txt){showToast('Informe URL do PDF ou texto','e');return;}
+    setState({vLoading:true});
+    var r=await api('ebooks',{method:'POST',headers:{'x-admin-password':state.admPass},body:{titulo,descricao:desc,categoria:cat,pdf_url:pdf||null,conteudo:txt||null,plano_minimo:plano,ordem:parseInt(ordem)||0}});
+    if(r.error){showToast(r.error,'e');setState({vLoading:false});return;}
+    var ebs=await loadEbooksAPI();
+    setState({ebooks:ebs,vLoading:false,admEditId:null});
+    showToast('Conteúdo adicionado! 📚');
+  });
+  on('btnAdmCancelConteudo','click',function(){setState({admEditId:null});});
+
+  // Toggle ebook
+  document.querySelectorAll('[data-admtoggle]').forEach(function(btn){
+    btn.addEventListener('click',async function(){
+      var ativo=btn.dataset.admativo==='true';
+      var id=btn.dataset.admtoggle;
+      // Try ebook first, then videoaula
+      var r=await api('ebooks',{method:'PUT',headers:{'x-admin-password':state.admPass},body:{id,ativo:!ativo}});
+      if(r.ok){var ebs=await loadEbooksAPI();setState({ebooks:ebs});return;}
+      await toggleVideoaulaAPI(state.admPass,id,!ativo);
+      var v=await loadVideoaulasAPI();setState({videoaulas:v});
+    });
+  });
+
+  // Delete ebook/video
+  document.querySelectorAll('[data-admdel]').forEach(function(btn){
+    btn.addEventListener('click',async function(){
+      if(!confirm('Remover este item?'))return;
+      var id=btn.dataset.admdel;
+      var r=await api('ebooks',{method:'DELETE',headers:{'x-admin-password':state.admPass},body:{id}});
+      if(r.ok){var ebs=await loadEbooksAPI();setState({ebooks:ebs});showToast('Removido!');return;}
+      await deleteVideoaulaAPI(state.admPass,id);
+      var v=await loadVideoaulasAPI();setState({videoaulas:v});showToast('Removido!');
+    });
+  });
+
   on("btnAdmLogin","click",async function(){
     var pass=$("admPassInput")?$("admPassInput").value:"";
     var test=await fetch(window.location.origin+'/api/videoaulas',{method:'POST',headers:{'Content-Type':'application/json','x-admin-password':pass},body:JSON.stringify({titulo:"_test_",youtube_url:"https://youtu.be/test"})});
     var testR=await test.json();
     if(testR.error&&testR.error.toLowerCase().includes("senha")){showToast("Senha incorreta","e");return;}
     if(testR.videoaula)await api('videoaulas',{method:'DELETE',headers:{'x-admin-password':pass},body:{id:testR.videoaula.id}});
-    setState({admAuthed:true,admPass:pass,vLoading:true});
-    loadVideoaulasAPI().then(function(v){setState({videoaulas:v,vLoading:false});});
+    setState({admAuthed:true,admPass:pass,vLoading:true,admTab:"conteudo"});
+    Promise.all([loadVideoaulasAPI(),loadEbooksAPI()]).then(function(res){setState({videoaulas:res[0],ebooks:res[1],vLoading:false});});
   });
   on("admPassInput","keydown",function(e){if(e.key==="Enter")$("btnAdmLogin")&&$("btnAdmLogin").click();});
   on("btnAdmBack","click",function(){setState({scr:"perfil",admAuthed:false});});
