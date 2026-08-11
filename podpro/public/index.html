@@ -300,6 +300,332 @@ h1,h2,h3{font-family:'Playfair Display',serif;letter-spacing:-.02em}
 .dark #authCardContainer {
   filter: drop-shadow(0 0 30px rgba(196,82,26,.2));
 }
+
+/* ══ Trilha de Estudos ══════════════════════════════════════════════════ */
+.trilha-wrap{--cream: #f6ecda;
+    --cream-2: #efe1c8;
+    --paper: #fbf3e6;
+    --terracotta: #bf5b37;
+    --terracotta-dark: #a54a2c;
+    --brown: #5c3a26;
+    --brown-dark: #3f2717;
+    --sage: #a9ab86;
+    --line: #c9a17e;
+    --shadow: rgba(63, 39, 23, 0.18);}
+.trilha-wrap{box-sizing: border-box;}
+.trilha-wrap{margin:0;
+    background: var(--cream);
+    background-image:
+      radial-gradient(circle at 15% 10%, rgba(191,91,55,0.06), transparent 40%),
+      radial-gradient(circle at 85% 80%, rgba(169,171,134,0.08), transparent 45%);
+    color: var(--brown-dark);
+    font-family: 'DM Sans', sans-serif;
+    padding: 28px 16px 60px;}
+.trilha-wrap .sheet{max-width: 1080px;
+    margin: 0 auto;
+    background: var(--paper);
+    border-radius: 18px;
+    box-shadow: 0 18px 50px var(--shadow);
+    padding: 34px 34px 40px;
+    position: relative;
+    border: 1px solid rgba(191,91,55,0.15);}
+.trilha-wrap /* ---------- Logo ---------- */
+  .logo{position: absolute;
+    top: 22px;
+    right: 30px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--brown);
+    letter-spacing: 0.5px;}
+.trilha-wrap .logo img{width: 30px; height: 30px;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: 0 2px 6px rgba(63,39,23,0.25);}
+.trilha-wrap /* ---------- Header ---------- */
+  header{text-align:center; padding-top: 10px; margin-bottom: 26px;}
+.trilha-wrap .badge{display:inline-block;
+    background: var(--terracotta);
+    color: #fdf5ec;
+    font-family:'DM Sans',sans-serif;
+    font-weight:700;
+    font-size: 12.5px;
+    letter-spacing: 3px;
+    padding: 7px 22px;
+    border-radius: 3px;
+    text-transform: uppercase;}
+.trilha-wrap h1.main-title{font-family:'Playfair Display', serif;
+    font-weight: 800;
+    font-size: 48px;
+    color: var(--brown-dark);
+    margin: 14px 0 2px;
+    letter-spacing: 1px;}
+.trilha-wrap .subtitle{font-family:'Caveat', cursive;
+    font-size: 30px;
+    color: var(--terracotta-dark);
+    font-weight: 600;
+    margin: -2px 0 14px;}
+.trilha-wrap .badge-outline{display:inline-block;
+    border: 2px solid var(--brown);
+    color: var(--brown-dark);
+    font-weight:700;
+    font-size: 12px;
+    letter-spacing: 2.5px;
+    padding: 6px 18px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    background: rgba(191,91,55,0.06);}
+.trilha-wrap /* ---------- Info row ---------- */
+  .info-row{display:grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 18px;
+    margin-bottom: 22px;}
+.trilha-wrap .field-card, .trilha-wrap .goal-card{background: var(--cream-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 18px;}
+.trilha-wrap .field-card label{font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 1px;
+    color: var(--brown);
+    display:block;
+    margin-bottom: 8px;}
+.trilha-wrap input[type="text"], .trilha-wrap input[type="date"]{width: 100%;
+    border: none;
+    border-bottom: 1.5px dashed var(--terracotta);
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    padding: 6px 2px;
+    color: var(--brown-dark);
+    outline: none;
+    margin-bottom: 6px;}
+.trilha-wrap input[type="text"]:focus, .trilha-wrap input[type="date"]:focus, .trilha-wrap textarea:focus{border-color: var(--brown);}
+.trilha-wrap .date-pair{display:flex; gap: 14px; flex-wrap: wrap;}
+.trilha-wrap .date-pair > div{flex:1; min-width: 140px;}
+.trilha-wrap .date-pair label{font-size: 12px; font-weight:700; color:var(--brown);}
+.trilha-wrap .goal-card label{font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 1px;
+    color: var(--brown);
+    display:flex; align-items:center; gap:8px;
+    margin-bottom: 8px;}
+.trilha-wrap .goal-card textarea{width: 100%;
+    border: none;
+    background: transparent;
+    resize: vertical;
+    min-height: 46px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--brown-dark);
+    border-bottom: 1.5px dashed var(--terracotta);
+    outline: none;
+    padding: 4px 2px;}
+.trilha-wrap /* ---------- Layout main ---------- */
+  .layout{display:grid;
+    grid-template-columns: 1.55fr 1fr;
+    gap: 26px;
+    align-items: start;}
+.trilha-wrap /* ---------- Trail ---------- */
+  .trail{position: relative; padding-left: 46px;}
+.trilha-wrap .trail::before{content:"";
+    position:absolute;
+    left: 19px;
+    top: 22px;
+    bottom: 30px;
+    width: 2px;
+    background-image: linear-gradient(var(--terracotta) 60%, transparent 0%);
+    background-size: 2px 12px;
+    background-repeat: repeat-y;}
+.trilha-wrap .step{position: relative;
+    background: var(--cream-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 20px 16px;
+    margin-bottom: 18px;
+    transition: box-shadow .2s ease, transform .2s ease;}
+.trilha-wrap .step.done{background: #f1ead4;
+    border-color: var(--sage);}
+.trilha-wrap .step:hover{box-shadow: 0 8px 18px rgba(63,39,23,0.10);}
+.trilha-wrap .step-num{position:absolute;
+    left: -46px;
+    top: 14px;
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: var(--terracotta);
+    color: #fff;
+    font-family:'Playfair Display', serif;
+    font-weight: 800;
+    font-size: 16px;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 0 0 4px var(--paper);
+    transition: background .2s ease;}
+.trilha-wrap .step.done .step-num{background: var(--sage);}
+.trilha-wrap .step-head{display:flex;
+    align-items:center;
+    gap: 10px;
+    margin-bottom: 10px;}
+.trilha-wrap .step-head .icon{font-size: 18px;}
+.trilha-wrap .step-head h3{font-family: 'Playfair Display', serif;
+    font-size: 17px;
+    color: var(--brown-dark);
+    margin: 0;
+    letter-spacing: 0.4px;}
+.trilha-wrap .check-item{display:flex;
+    align-items:flex-start;
+    gap: 9px;
+    font-size: 14px;
+    padding: 5px 0;
+    cursor: pointer;
+    user-select:none;}
+.trilha-wrap .check-item input{margin-top: 3px; accent-color: var(--terracotta); width:15px; height:15px; cursor:pointer;}
+.trilha-wrap .check-item span.txt.checked{text-decoration: line-through; color: #8a7458; opacity:.6;}
+.trilha-wrap .pomodoro-blocks{display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 8px 0 10px;}
+.trilha-wrap .pblock{background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;}
+.trilha-wrap .pblock .plabel{display:inline-block;
+    background: var(--brown);
+    color:#fff;
+    font-size: 10.5px;
+    font-weight:700;
+    letter-spacing: 1px;
+    padding: 3px 9px;
+    border-radius: 3px;
+    margin-bottom: 8px;}
+.trilha-wrap .pblock .check-item{font-size: 13px; padding: 3px 0;}
+.trilha-wrap .mini-question{background: #eadfc4;
+    border-left: 3px solid var(--terracotta);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 13px;
+    margin-top: 8px;}
+.trilha-wrap .mini-question input{width:100%;
+    border:none;
+    background:transparent;
+    border-bottom: 1px dashed var(--terracotta);
+    font-family:'DM Sans',sans-serif;
+    font-size: 13px;
+    padding: 4px 2px;
+    margin-top: 4px;
+    outline:none;}
+.trilha-wrap .conclui-row{display:flex; align-items:center; gap: 10px;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--line);}
+.trilha-wrap .conclui-row .tag{background: var(--terracotta-dark);
+    color:#fff;
+    font-size: 11px;
+    font-weight:700;
+    letter-spacing: 1px;
+    padding: 4px 10px;
+    border-radius: 3px;}
+.trilha-wrap .week-days{display:flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 6px;}
+.trilha-wrap .day-box{text-align:center;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--brown);}
+.trilha-wrap .day-box input{display:block; margin: 6px auto 0; width:17px; height:17px; accent-color: var(--terracotta); cursor:pointer;}
+.trilha-wrap /* ---------- Sidebar ---------- */
+  .sidebar > div{background: var(--cream-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 18px;}
+.trilha-wrap .sidebar h3{font-family:'Playfair Display', serif;
+    font-size: 15px;
+    color: var(--brown-dark);
+    margin: 0 0 12px;
+    text-align:center;
+    background: var(--terracotta);
+    color:#fff;
+    padding: 7px 10px;
+    border-radius: 6px;
+    letter-spacing: 1px;}
+.trilha-wrap .progress-days{display:flex;
+    justify-content: space-between;
+    margin-top: 6px;}
+.trilha-wrap .pday{text-align:center; font-size: 12px; font-weight:700; color: var(--brown);}
+.trilha-wrap .pday input{display:block; margin: 6px auto 0; width: 17px; height: 17px; accent-color: var(--terracotta); cursor:pointer;}
+.trilha-wrap .progress-bar-wrap{margin-top: 14px;}
+.trilha-wrap .progress-bar-outer{background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    height: 14px;
+    overflow: hidden;}
+.trilha-wrap .progress-bar-inner{height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--terracotta), var(--sage));
+    transition: width .4s ease;
+    border-radius: 20px;}
+.trilha-wrap .progress-label{font-size: 12px;
+    color: var(--brown);
+    margin-top: 6px;
+    text-align:center;
+    font-weight: 600;}
+.trilha-wrap textarea.notes{width: 100%;
+    min-height: 130px;
+    border: none;
+    background: transparent;
+    resize: vertical;
+    font-family:'DM Sans',sans-serif;
+    font-size: 14px;
+    color: var(--brown-dark);
+    outline: none;
+    line-height: 1.9;
+    background-image: repeating-linear-gradient(var(--paper) 0 27px, var(--line) 27px 28px);}
+.trilha-wrap .phrase-card{background: linear-gradient(135deg, var(--cream-2), var(--paper));
+    border: 1px dashed var(--terracotta);
+    text-align:center;
+    padding: 20px 16px;}
+.trilha-wrap .phrase-card .caveat{font-family:'Caveat', cursive;
+    font-size: 24px;
+    color: var(--terracotta-dark);
+    line-height: 1.35;
+    font-weight: 700;}
+.trilha-wrap .phrase-card .final{font-weight: 700;
+    font-size: 13.5px;
+    color: var(--brown-dark);
+    margin-top: 10px;}
+.trilha-wrap footer{text-align:center;
+    margin-top: 26px;
+    font-family:'Caveat', cursive;
+    font-size: 20px;
+    color: var(--terracotta-dark);
+    font-weight: 600;}
+.trilha-wrap .reset-btn{display:block;
+    margin: 22px auto 0;
+    background: var(--brown);
+    color: #fdf5ec;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 24px;
+    font-family:'DM Sans',sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: background .2s ease;}
+.trilha-wrap .reset-btn:hover{background: var(--terracotta-dark);}
+@media (max-width: 860px){.layout{ grid-template-columns: 1fr;}
+.trilha-wrap .info-row{grid-template-columns: 1fr;}
+.trilha-wrap h1.main-title{font-size: 34px;}
+.trilha-wrap .logo{position: static; justify-content:center; margin-bottom: 10px;}
+.trilha-wrap .pomodoro-blocks{grid-template-columns: 1fr;}
+.trilha-wrap{padding:0 0 20px;}
+.trilha-wrap .sheet{border-radius:18px;margin:0;box-shadow:0 8px 32px rgba(63,39,23,.12);}
+.trilha-wrap .logo img{display:none}
+
 </style>
 </head>
 <body>
@@ -591,6 +917,7 @@ function render(){
   bindEvents();
   applyGlow();
   applyTheme(state.theme);
+  if(state.scr==='tarefas'){setTimeout(initTrilha,50);}
 
 
 }
@@ -849,46 +1176,108 @@ function renderVideoaulas(){
 }
 
 function renderTarefas(){
-  const filtradas=state.tasks.filter(t=>state.filtroTask==="todas"?true:state.filtroTask==="pendentes"?!t.feita:t.feita);
-  const pendentes=state.tasks.filter(t=>!t.feita).length;
-  const feitas=state.tasks.filter(t=>t.feita).length;
-  const pct=state.tasks.length?Math.round(feitas/state.tasks.length*100):0;
-
-  return'<div class="screen fade-up">'
-    +'<h2 style="font-size:26px;font-weight:900;background:linear-gradient(120deg,var(--text) 20%,#4E7A2F 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px">✅ Trilha de Estudos</h2>'
-    +'<p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">Organize sua preparação para o concurso</p>'
-
-    // Stats
-    +'<div class="card" style="padding:16px 20px;margin-bottom:16px;background:linear-gradient(135deg,rgba(78,122,47,.12),rgba(78,122,47,.04));border-color:rgba(78,122,47,.2)">'
-      +'<div style="display:flex;justify-content:space-between;align-items:center">'
-        +[{lb:"Pendentes",val:pendentes,c:"var(--pink)"},{lb:"Feitas",val:feitas,c:"#16a34a"},{lb:"Total",val:state.tasks.length,c:"var(--text)"}].map(s=>'<div style="text-align:center"><p style="color:var(--text-muted);font-size:10px;font-weight:700;letter-spacing:.5px">'+s.lb.toUpperCase()+'</p><p style="font-size:28px;font-weight:900;color:'+s.c+'">'+s.val+'</p></div>').join("")
-      +'</div>'
-      +(state.tasks.length?'<div style="margin-top:12px"><div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-size:11px;color:var(--text-muted)">Progresso</span><span style="font-size:11px;font-weight:800;color:#4E7A2F">'+pct+'%</span></div><div style="height:6px;border-radius:6px;background:var(--border)"><div style="height:100%;border-radius:6px;width:'+pct+'%;background:linear-gradient(90deg,#4E7A2F,#7AC04E);transition:width .4s ease"></div></div></div>':'')
+  return'<div class="screen fade-up" style="padding:16px 12px 100px">'
+    +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">'
+      +'<h2 style="font-size:22px;font-weight:700;color:var(--text);font-family:\'Playfair Display\',serif">📋 Trilha de Estudos</h2>'
     +'</div>'
-
-    // Add task
-    +'<div style="display:flex;gap:8px;margin-bottom:14px">'
-      +'<input class="inp" id="novaTask" placeholder="Nova tarefa de estudo…" style="border-radius:50px;flex:1"/>'
-      +'<button class="btn btn-pink" id="btnAddTask" style="padding:0 20px;font-size:22px;border-radius:50px;min-width:52px">+</button>'
+    +'<div class="trilha-wrap" id="trilhaWrap">'
+      +getTrilhaHTML()
     +'</div>'
-
-    // Filters
-    +'<div style="display:flex;gap:8px;margin-bottom:14px;background:var(--inp-bg);border-radius:50px;padding:3px">'
-      +["todas","pendentes","feitas"].map(f=>'<button class="btn '+(state.filtroTask===f?"btn-pink":"btn-ghost")+'" data-filtro="'+f+'" style="flex:1;padding:7px 10px;font-size:12px;border-radius:40px;border:none;'+(state.filtroTask!==f?'background:transparent;color:var(--text-muted)':'')+'">'+f.charAt(0).toUpperCase()+f.slice(1)+'</button>').join("")
-    +'</div>'
-
-    +(filtradas.length===0?'<div style="text-align:center;padding:42px 0;color:var(--text-muted)"><span style="font-size:48px">'+(state.filtroTask==="feitas"?"🏆":"📝")+'</span><p style="margin-top:14px;font-size:14px;font-weight:600">'+(state.filtroTask==="feitas"?"Nenhuma tarefa concluída ainda.":state.filtroTask==="pendentes"?"Tudo em dia! 🎉":"Adicione sua primeira tarefa acima!")+'</p></div>':"")
-
-    +'<div style="display:flex;flex-direction:column;gap:8px">'+filtradas.map(t=>
-      '<div class="card task-item" style="opacity:'+(t.feita?.65:1)+';transition:opacity .2s">'
-        +'<button class="task-check '+(t.feita?"done":"")+'" data-taskid="'+t.id+'" style="background:'+(t.feita?'linear-gradient(135deg,#16a34a,#22c55e)':'var(--ghost-bg)')+';border-color:'+(t.feita?'#16a34a':'var(--border)')+';">'+(t.feita?'✓':'')+'</button>'
-        +'<p style="flex:1;font-size:14px;font-weight:600;text-decoration:'+(t.feita?"line-through":"none")+';color:'+(t.feita?"var(--text-muted)":"var(--text)")+';line-height:1.4">'+t.texto+'</p>'
-        +'<button class="btn btn-danger" data-deltask="'+t.id+'" style="padding:5px 12px;font-size:12px;border-radius:20px">✕</button>'
-      +'</div>').join("")
-    +'</div>'
-
-    +(feitas>0?'<button class="btn btn-danger" id="btnClearDone" style="width:100%;padding:13px;font-size:14px;margin-top:14px;border-radius:20px">🗑 Limpar concluídas ('+feitas+')</button>':"")
   +'</div>'+renderNav("quiz");
+}
+
+function getTrilhaHTML(){
+  return "<div class=\"sheet\">\n  <div class=\"logo\"><img src=\"podpro-logo.png\" alt=\"PodPr\u00f4\">PodPr\u00f4<\/div>\n\n  <header>\n    <span class=\"badge\">Planner Semanal<\/span>\n    <h1 class=\"main-title\">Trilha de Estudos<\/h1>\n    <div class=\"subtitle\">da Pedagoga Concurseira<\/div>\n    <span class=\"badge-outline\">M\u00e9todo de Estudo Inteligente<\/span>\n  <\/header>\n\n  <div class=\"info-row\">\n    <div class=\"field-card\">\n      <label>Nome<\/label>\n      <input type=\"text\" id=\"nome\" placeholder=\"Digite seu nome\">\n      <div class=\"date-pair\">\n        <div>\n          <label>Semana de<\/label>\n          <input type=\"date\" id=\"semanaDe\">\n        <\/div>\n        <div>\n          <label>At\u00e9<\/label>\n          <input type=\"date\" id=\"semanaAte\">\n        <\/div>\n      <\/div>\n    <\/div>\n    <div class=\"goal-card\">\n      <label>\ud83c\udfaf Objetivo \u2014 Nesta semana meu foco principal ser\u00e1:<\/label>\n      <textarea id=\"objetivo\" placeholder=\"Escreva aqui...\"><\/textarea>\n    <\/div>\n  <\/div>\n\n  <div class=\"layout\">\n    <!-- TRILHA -->\n    <div class=\"trail\" id=\"trail\">\n\n      <div class=\"step\" data-step=\"1\">\n        <div class=\"step-num\">1<\/div>\n        <div class=\"step-head\"><span class=\"icon\">\ud83c\udfaf<\/span><h3>Objetivo Claro (80/20)<\/h3><\/div>\n        <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">O que vou estudar<\/span><\/label>\n        <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">Quanto tempo vou estudar<\/span><\/label>\n        <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">Qual resultado espero alcan\u00e7ar<\/span><\/label>\n        <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">Qual conte\u00fado \u00e9 prioridade na minha banca<\/span><\/label>\n        <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">Separei materiais e quest\u00f5es antes de come\u00e7ar<\/span><\/label>\n        <div class=\"conclui-row\">\n          <span class=\"tag\">Conclu\u00ed esta etapa<\/span>\n          <label class=\"check-item\" style=\"padding:0;\"><input type=\"checkbox\" class=\"step-done\" data-step-toggle=\"1\"><span class=\"txt\">Sim<\/span><\/label>\n        <\/div>\n      <\/div>\n\n      <div class=\"step\" data-step=\"2\">\n        <div class=\"step-num\">2<\/div>\n        <div class=\"step-head\"><span class=\"icon\">\u23f1\ufe0f<\/span><h3>Foco Profundo (Pomodoro)<\/h3><\/div>\n        <div class=\"pomodoro-blocks\">\n          <div class=\"pblock\">\n            <span class=\"plabel\">Bloco 1<\/span>\n            <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">25 min<\/span><\/label>\n            <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">40 min<\/span><\/label>\n            <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">50 min<\/span><\/label>\n            <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">Pausa curta<\/span><\/label>\n          <\/div>\n          <div class=\"pblock\">\n            <span class=\"plabel\">Bloco 2<\/span>\n            <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">25 min<\/span><\/label>\n            <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">40 min<\/span><\/label>\n            <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">50 min<\/span><\/label>\n            <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">Pausa curta<\/span><\/label>\n          <\/div>\n          <div class=\"pblock\">\n            <span class=\"plabel\">Bloco 3<\/span>\n            <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">25 min<\/span><\/label>\n            <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">40 min<\/span><\/label>\n            <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">50 min<\/span><\/label>\n            <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">Pausa curta<\/span><\/label>\n          <\/div>\n        <\/div>\n        <div class=\"conclui-row\">\n          <span class=\"tag\">Hoje consegui estudar sem distra\u00e7\u00f5es<\/span>\n          <label class=\"check-item\" style=\"padding:0;\"><input type=\"checkbox\" class=\"step-done\" data-step-toggle=\"2\"><span class=\"txt\">Sim<\/span><\/label>\n        <\/div>\n      <\/div>\n\n      <div class=\"step\" data-step=\"3\">\n        <div class=\"step-num\">3<\/div>\n        <div class=\"step-head\"><span class=\"icon\">\ud83e\udde0<\/span><h3>Estudo Ativo<\/h3><\/div>\n        <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">Fiz perguntas para mim mesma<\/span><\/label>\n        <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">Escrevi resumo r\u00e1pido com minhas palavras<\/span><\/label>\n        <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">Expliquei em voz alta<\/span><\/label>\n        <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">Expliquei o conte\u00fado sem olhar<\/span><\/label>\n        <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">Resolvi quest\u00f5es<\/span><\/label>\n        <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">Revisei meus erros<\/span><\/label>\n        <div class=\"mini-question\">\n          Qual conte\u00fado ficou mais claro hoje?\n          <input type=\"text\" placeholder=\"Escreva aqui...\">\n        <\/div>\n      <\/div>\n\n      <div class=\"step\" data-step=\"4\">\n        <div class=\"step-num\">4<\/div>\n        <div class=\"step-head\"><span class=\"icon\">\ud83d\udcc5<\/span><h3>Revis\u00e3o Espa\u00e7ada<\/h3><\/div>\n        <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">Revis\u00e3o no mesmo dia<\/span><\/label>\n        <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">Revis\u00e3o 24h depois<\/span><\/label>\n        <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">Revis\u00e3o 7 dias depois<\/span><\/label>\n        <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">Revis\u00e3o 30 dias depois<\/span><\/label>\n      <\/div>\n\n      <div class=\"step\" data-step=\"5\">\n        <div class=\"step-num\">5<\/div>\n        <div class=\"step-head\"><span class=\"icon\">\ud83e\udde9<\/span><h3>Treino de Mem\u00f3ria<\/h3><\/div>\n        <p style=\"font-size:13px; color:var(--brown); margin: 0 0 6px;\">Hoje fechei o material e tentei lembrar sem olhar:<\/p>\n        <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">Lembrei sozinha<\/span><\/label>\n        <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">Precisei consultar depois<\/span><\/label>\n        <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">Identifiquei o que preciso revisar melhor<\/span><\/label>\n      <\/div>\n\n      <div class=\"step\" data-step=\"6\">\n        <div class=\"step-num\">6<\/div>\n        <div class=\"step-head\"><span class=\"icon\">\ud83c\udf31<\/span><h3>Const\u00e2ncia da Semana<\/h3><\/div>\n        <p style=\"font-size:13px; color:var(--brown); margin: 0 0 4px;\">Dias estudados:<\/p>\n        <div class=\"week-days\">\n          <div class=\"day-box\">SEG<input type=\"checkbox\" data-track><\/div>\n          <div class=\"day-box\">TER<input type=\"checkbox\" data-track><\/div>\n          <div class=\"day-box\">QUA<input type=\"checkbox\" data-track><\/div>\n          <div class=\"day-box\">QUI<input type=\"checkbox\" data-track><\/div>\n          <div class=\"day-box\">SEX<input type=\"checkbox\" data-track><\/div>\n          <div class=\"day-box\">S\u00c1B<input type=\"checkbox\" data-track><\/div>\n          <div class=\"day-box\">DOM<input type=\"checkbox\" data-track><\/div>\n        <\/div>\n      <\/div>\n\n    <\/div>\n\n    <!-- SIDEBAR -->\n    <div class=\"sidebar\">\n      <div>\n        <h3>Meu Progresso<\/h3>\n        <p style=\"font-size:13px; font-weight:600; color:var(--brown); margin:0 0 4px;\">Quantos dias consegui estudar nesta semana?<\/p>\n        <div class=\"progress-days\">\n          <div class=\"pday\">1<input type=\"checkbox\" data-track><\/div>\n          <div class=\"pday\">2<input type=\"checkbox\" data-track><\/div>\n          <div class=\"pday\">3<input type=\"checkbox\" data-track><\/div>\n          <div class=\"pday\">4<input type=\"checkbox\" data-track><\/div>\n          <div class=\"pday\">5<input type=\"checkbox\" data-track><\/div>\n          <div class=\"pday\">6<input type=\"checkbox\" data-track><\/div>\n          <div class=\"pday\">7<input type=\"checkbox\" data-track><\/div>\n        <\/div>\n        <div class=\"progress-bar-wrap\">\n          <div class=\"progress-bar-outer\"><div class=\"progress-bar-inner\" id=\"progressBar\"><\/div><\/div>\n          <div class=\"progress-label\" id=\"progressLabel\">0% da trilha conclu\u00edda<\/div>\n        <\/div>\n      <\/div>\n\n      <div>\n        <h3>Como me senti?<\/h3>\n        <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">Muito focada<\/span><\/label>\n        <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">Consegui manter const\u00e2ncia<\/span><\/label>\n        <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">Me distra\u00ed bastante<\/span><\/label>\n        <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">Preciso reorganizar minha rotina<\/span><\/label>\n        <label class=\"check-item\"><input type=\"checkbox\" data-track><span class=\"txt\">Evolu\u00ed mais do que imaginei<\/span><\/label>\n      <\/div>\n\n      <div>\n        <h3>Anota\u00e7\u00f5es da Semana<\/h3>\n        <textarea class=\"notes\" id=\"notes\" placeholder=\"Escreva aqui...\"><\/textarea>\n      <\/div>\n\n      <div class=\"phrase-card\">\n        <h3 style=\"background:none; color:var(--brown-dark); padding:0;\">Frase da Semana \u2661<\/h3>\n        <div class=\"caveat\">Objetivo claro + foco profundo + estudo ativo + revis\u00e3o espa\u00e7ada + lembrar sem olhar + const\u00e2ncia di\u00e1ria.<\/div>\n        <div class=\"final\">Pequenos passos todos os dias<br>constroem grandes aprova\u00e7\u00f5es.<\/div>\n      <\/div>\n    <\/div>\n  <\/div>\n\n  <button class=\"reset-btn\" id=\"resetBtn\">Reiniciar trilha<\/button>\n\n  <footer>@institutoaya \u00b7 feito com carinho pela PodPr\u00f4 \u2661<\/footer>\n<\/div>";
+}
+
+function initTrilha(){
+  (function(){
+  const STORAGE_KEY = 'trilha-estudos-pedagoga-v1';
+
+  const root=document.querySelector(".trilha-wrap"); function qsAll(sel){ return root ? Array.from(root.querySelectorAll(sel)) : []; }
+
+  function save(){
+    const data = { checks: {}, texts: {} };
+    qsAll('input[type="checkbox"]').forEach((el, i) => {
+      el.dataset.idx = i;
+      data.checks[i] = el.checked;
+    });
+    qsAll('input[type="text"], input[type="date"]').forEach((el, i) => {
+      el.dataset.tidx = i;
+      data.texts['t'+i] = el.value;
+    });
+    qsAll('textarea').forEach((el, i) => {
+      data.texts['ta'+i] = el.value;
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    updateUI();
+  }
+
+  function load(){
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    try{
+      const data = JSON.parse(raw);
+      qsAll('input[type="checkbox"]').forEach((el, i) => {
+        if(data.checks && data.checks[i] !== undefined) el.checked = data.checks[i];
+      });
+      qsAll('input[type="text"], input[type="date"]').forEach((el, i) => {
+        if(data.texts && data.texts['t'+i] !== undefined) el.value = data.texts['t'+i];
+      });
+      qsAll('textarea').forEach((el, i) => {
+        if(data.texts && data.texts['ta'+i] !== undefined) el.value = data.texts['ta'+i];
+      });
+    }catch(e){}
+  }
+
+  function updateUI(){
+    // strike-through checked labels
+    qsAll('.check-item').forEach(item => {
+      const cb = item.querySelector('input[type="checkbox"]');
+      const txt = item.querySelector('.txt');
+      if(cb && txt){ txt.classList.toggle('checked', cb.checked); }
+    });
+
+    // step done state (manual toggle or all data-track checked)
+    qsAll('.step').forEach(step => {
+      const manual = step.querySelector('.step-done');
+      const trackers = step.querySelectorAll('input[data-track]');
+      let done = false;
+      if(manual){ done = manual.checked; }
+      else if(trackers.length){
+        done = Array.from(trackers).every(t => t.checked);
+      }
+      step.classList.toggle('done', done);
+    });
+
+    // overall progress bar based on all data-track checkboxes across trail + sidebar progress days
+    const all = qsAll('input[data-track]');
+    const checked = all.filter(c => c.checked).length;
+    const pct = all.length ? Math.round((checked/all.length)*100) : 0;
+    const pb=root&&root.querySelector('#trilha-progressBar');if(pb)pb.style.width=pct+'%';
+    const pl=root&&root.querySelector('#trilha-progressLabel');if(pl)pl.textContent=pct+'% da trilha concluída';
+  }
+
+  document.addEventListener('change', (e) => {
+    if(e.target.matches('input, textarea')) save();
+  });
+  document.addEventListener('input', (e) => {
+    if(e.target.matches('input[type="text"], textarea')) save();
+  });
+
+  root && root.querySelector('#trilha-resetBtn').addEventListener('click', () => {
+    if(confirm('Tem certeza que deseja reiniciar toda a trilha desta semana?')){
+      localStorage.removeItem(STORAGE_KEY);
+      qsAll('input[type="checkbox"]').forEach(el => el.checked = false);
+      qsAll('input[type="text"], input[type="date"]').forEach(el => el.value = '');
+      qsAll('textarea').forEach(el => el.value = '');
+      updateUI();
+    }
+  });
+
+  load();
+  updateUI();
+})();
 }
 
 function renderPlanos(){
