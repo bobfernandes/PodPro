@@ -626,6 +626,23 @@ h1,h2,h3{font-family:'Playfair Display',serif;letter-spacing:-.02em}
 .trilha-wrap .sheet{border-radius:18px;margin:0;box-shadow:0 8px 32px rgba(63,39,23,.12);}
 .trilha-wrap .logo img{display:none}
 
+
+/* ── Trilha mobile fix ─────────────────────────────────────────────────── */
+@media (max-width: 700px) {
+  .trilha-wrap { padding: 0 0 12px; }
+  .trilha-wrap .sheet { padding: 20px 16px 28px; border-radius: 14px; }
+  .trilha-wrap .layout { grid-template-columns: 1fr !important; gap: 16px; }
+  .trilha-wrap .info-row { grid-template-columns: 1fr !important; }
+  .trilha-wrap .trail { padding-left: 36px; }
+  .trilha-wrap .trail::before { left: 13px; }
+  .trilha-wrap .step-num { left: -36px; width: 28px; height: 28px; font-size: 14px; }
+  .trilha-wrap .pomodoro-blocks { grid-template-columns: 1fr !important; }
+  .trilha-wrap h1.main-title { font-size: 28px !important; }
+  .trilha-wrap .logo { position: static !important; justify-content: center; margin-bottom: 10px; }
+  .trilha-wrap .sidebar { margin-top: 0; }
+  .trilha-wrap .week-days { gap: 6px; }
+  .trilha-wrap .date-pair { flex-direction: column; gap: 8px; }
+}
 </style>
 </head>
 <body>
