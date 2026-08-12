@@ -972,7 +972,7 @@ function renderScreen(){
 }
 
 function renderNav(active){
-  const items=[{id:"home",ic:"🏠",lb:"Início"},{id:"simulados",ic:"🎓",lb:"Simulados"},{id:"planos",ic:"💎",lb:"Planos"},{id:"vagas",ic:"📡",lb:"Radar"},{id:"perfil",ic:"👤",lb:"Perfil"}];
+  const items=[{id:"home",ic:"🏠",lb:"Início"},{id:"simulados",ic:"🎓",lb:"Simulados"},{id:"ebooks",ic:"📚",lb:"E-books"},{id:"vagas",ic:"📡",lb:"Radar"},{id:"perfil",ic:"👤",lb:"Perfil"}];
   return'<nav class="nav">'+items.map(i=>'<button class="nav-btn '+(active===i.id?"active":"")+'" data-nav="'+i.id+'"><span class="ic">'+i.ic+'</span><span class="lb">'+i.lb+'</span></button>').join("")+'</nav>';
 }
 
@@ -1408,7 +1408,7 @@ function renderEbooks(){
         +'</button>';
       }).join('')+'</div>'
     )
-  +'</div>'+renderNav("vagas");
+  +'</div>'+renderNav("ebooks");
 }
 
 function selectSimMod(id){setState({simModId:id,simBanca:'TODAS',simQuiz:null,simDone:false});}
