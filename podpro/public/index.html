@@ -1378,6 +1378,11 @@ function renderFichas(){
 }
 
 function renderEbooks(){
+  // Filter ebooks by user plan level
+  var PLANO_NIVEL={ferreiro:0,libaneo:1,vygotsky:2,piaget:3};
+  var userNivel=PLANO_NIVEL[state.plano]??0;
+  var visibleEbooks=state.ebooks.filter(function(e){return (PLANO_NIVEL[e.plano_minimo]??0)<=userNivel;});
+
   if(state.selEbook){
     var eb=state.selEbook;
     var CATS={geral:"📖",bncc:"📘",legislacao:"⚖️",autores:"✍️",resumo:"📋"};
@@ -1393,8 +1398,8 @@ function renderEbooks(){
     +'<h2 style="font-size:24px;font-weight:900;background:linear-gradient(120deg,var(--text) 20%,#C4521A 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px">📚 E-books & Materiais</h2>'
     +'<p style="color:var(--text-muted);font-size:13px;margin-bottom:14px">Conteúdo exclusivo para sua preparação</p>'
     +(state.eLoading?'<div style="text-align:center;padding:40px 0"><div class="loader spin" style="margin:0 auto"></div></div>'
-      :state.ebooks.length===0?'<div style="text-align:center;padding:40px 0;color:var(--text-muted)"><span style="font-size:46px">📚</span><p style="margin-top:12px;font-size:14px">Nenhum material disponível ainda.</p></div>'
-      :'<div style="display:flex;flex-direction:column;gap:12px">'+state.ebooks.map(function(eb,i){
+      :visibleEbooks.length===0?'<div style="text-align:center;padding:40px 0;color:var(--text-muted)"><span style="font-size:46px">📚</span><p style="margin-top:12px;font-size:14px">Nenhum material disponível ainda.</p></div>'
+      :'<div style="display:flex;flex-direction:column;gap:12px">'+visibleEbooks.map(function(eb,i){
         return'<button class="btn card" data-ebidx="'+i+'" style="padding:18px;text-align:left;width:100%">'
           +'<div style="display:flex;align-items:flex-start;gap:12px">'
             +'<span style="font-size:32px">'+(CAT_IC[eb.categoria]||"📖")+'</span>'
@@ -1700,7 +1705,7 @@ async function loadUserData(user){
   setState({tasks:results[0],qHistory:results[1]});
   if(hasAccess('libaneo'))loadConcursos(user.uf);
   setState({eLoading:true});
-  loadEbooksAPI(null,user.plano||'ferreiro').then(function(ebooks){setState({ebooks:ebooks,eLoading:false});});
+  loadEbooksAPI().then(function(ebooks){setState({ebooks:ebooks,eLoading:false});});
   var params=new URLSearchParams(window.location.search);
   if(params.get('assinatura')==='sucesso'){showToast('Pagamento confirmado! 🎉');window.history.replaceState({},'',window.location.pathname);}
 }
