@@ -1847,29 +1847,45 @@ function bindEvents(){
 
   // Save
   on('btnAdmSave','click',async function(){
-    var titulo=document.getElementById('cf_titulo')?document.getElementById('cf_titulo').value.trim():'';
-    var desc=document.getElementById('cf_desc')?document.getElementById('cf_desc').value.trim():'';
-    var tipo=document.getElementById('cf_tipo')?document.getElementById('cf_tipo').value:'ebook';
-    var plano=document.getElementById('cf_plano')?document.getElementById('cf_plano').value:'ferreiro';
+    // Capturar TODOS os valores antes de qualquer setState
+    var titulo=(document.getElementById('cf_titulo')||{}).value||'';
+    titulo=titulo.trim();
+    var desc=((document.getElementById('cf_desc')||{}).value||'').trim();
+    var tipo=((document.getElementById('cf_tipo')||{}).value||'ebook');
+    var plano=((document.getElementById('cf_plano')||{}).value||'ferreiro');
+    var pdf=((document.getElementById('cf_pdf')||{}).value||'').trim();
+    var txt=((document.getElementById('cf_texto')||{}).value||'').trim();
+    var cat=((document.getElementById('cf_cat')||{}).value||'geral');
+    var yturl=((document.getElementById('cf_yturl')||{}).value||'').trim();
+    var banca=((document.getElementById('cf_banca')||{}).value||'');
+
+    // Validar sem re-renderizar
     if(!titulo){showToast('Título obrigatório','e');return;}
-    setState({vLoading:true});
+    if(tipo==='video'&&!yturl){showToast('Link do YouTube obrigatório','e');return;}
+    if(tipo!=='video'&&!pdf&&!txt){showToast('Informe o link do PDF ou cole o texto','e');return;}
+
+    // Desabilitar botão via DOM direto (sem setState)
+    var btn=document.getElementById('btnAdmSave');
+    if(btn){btn.disabled=true;btn.textContent='Salvando…';}
+
     var r;
-    if(tipo==='video'){
-      var yturl=document.getElementById('cf_yturl')?document.getElementById('cf_yturl').value.trim():'';
-      var banca=document.getElementById('cf_banca')?document.getElementById('cf_banca').value:'';
-      if(!yturl){showToast('Link do YouTube obrigatório','e');setState({vLoading:false});return;}
-      r=await addVideoaulaAPI(state.admPass,{titulo,descricao:desc,youtube_url:yturl,banca:banca,disciplina:'',ordem:0});
-      if(r.error){showToast(r.error,'e');setState({vLoading:false});return;}
-    }else{
-      var pdf=document.getElementById('cf_pdf')?document.getElementById('cf_pdf').value.trim():'';
-      var txt=document.getElementById('cf_texto')?document.getElementById('cf_texto').value.trim():'';
-      var cat=document.getElementById('cf_cat')?document.getElementById('cf_cat').value:'geral';
-      if(!pdf&&!txt){showToast('Informe o PDF ou o texto','e');setState({vLoading:false});return;}
-      r=await api('ebooks',{method:'POST',headers:{'x-admin-password':state.admPass},body:{titulo,descricao:desc,categoria:cat,pdf_url:pdf||null,conteudo:txt||null,plano_minimo:plano,ordem:0}});
-      if(r.error){showToast(r.error,'e');setState({vLoading:false});return;}
+    try{
+      if(tipo==='video'){
+        r=await addVideoaulaAPI(state.admPass,{titulo,descricao:desc,youtube_url:yturl,banca,disciplina:'',ordem:0});
+      }else{
+        r=await api('ebooks',{method:'POST',headers:{'x-admin-password':state.admPass},
+          body:{titulo,descricao:desc,categoria:cat,pdf_url:pdf||null,conteudo:txt||null,plano_minimo:plano,ordem:0}});
+      }
+      if(r&&r.error){showToast(r.error,'e');if(btn){btn.disabled=false;btn.textContent='💾 Salvar';}return;}
+    }catch(e){
+      showToast('Erro ao salvar: '+e.message,'e');
+      if(btn){btn.disabled=false;btn.textContent='💾 Salvar';}
+      return;
     }
+
+    // Só agora re-renderiza com tudo atualizado
     var results=await Promise.all([loadVideoaulasAPI(),loadEbooksAPI()]);
-    setState({videoaulas:results[0],ebooks:results[1],vLoading:false,admEditId:null,admEditTipo:null});
+    setState({videoaulas:results[0],ebooks:results[1],admEditId:null,admEditTipo:null});
     showToast('Conteúdo adicionado! ✅');
   });
   on('btnAdmCancel','click',function(){setState({admEditId:null,admEditTipo:null});});
