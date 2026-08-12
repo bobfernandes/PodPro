@@ -820,7 +820,7 @@ async function loadQuizHistoryAPI(uid){const r=await api('quiz?usuario_id='+uid)
 async function saveQuizResultAPI(uid,banca,score,total){return api('quiz',{method:'POST',body:{usuario_id:uid,banca,score,total}});}
 
 async function loadVideoaulasAPI(banca){const q=banca?'?banca='+banca:'';const r=await api('videoaulas'+q);return r.videoaulas||[];}
-async function loadEbooksAPI(cat){const q=cat?'?categoria='+cat:'';const r=await api('ebooks'+q);return r.ebooks||[];}
+async function loadEbooksAPI(cat,plano){var q=[];if(cat)q.push('categoria='+cat);if(plano)q.push('plano='+plano);const qs=q.length?'?'+q.join('&'):'';const r=await api('ebooks'+qs);return r.ebooks||[];}
 async function addEbookAPI(pass,dados){return api('ebooks',{method:'POST',headers:{'x-admin-password':pass},body:dados});}
 async function deleteEbookAPI(pass,id){return api('ebooks',{method:'DELETE',headers:{'x-admin-password':pass},body:{id}});}
 async function toggleEbookAPI(pass,id,ativo){return api('ebooks',{method:'PUT',headers:{'x-admin-password':pass},body:{id,ativo}});}
@@ -1700,7 +1700,7 @@ async function loadUserData(user){
   setState({tasks:results[0],qHistory:results[1]});
   if(hasAccess('libaneo'))loadConcursos(user.uf);
   setState({eLoading:true});
-  loadEbooksAPI().then(function(ebooks){setState({ebooks:ebooks,eLoading:false});});
+  loadEbooksAPI(null,user.plano||'ferreiro').then(function(ebooks){setState({ebooks:ebooks,eLoading:false});});
   var params=new URLSearchParams(window.location.search);
   if(params.get('assinatura')==='sucesso'){showToast('Pagamento confirmado! 🎉');window.history.replaceState({},'',window.location.pathname);}
 }
