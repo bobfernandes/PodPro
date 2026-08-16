@@ -2070,6 +2070,33 @@ function bindEvents(){
   })();
 }
 
+// ─── AUTO-REFRESH PLAN ON FOCUS ──────────────────────────────────────────────
+async function refreshPlano(){
+  if(!state.user)return;
+  try{
+    var r=await fetch('/api/login',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email:state.user.email,senha:'_check_plano_',_refresh:true})
+    });
+    // If login fails, just try to get user data differently
+    // For now use a simpler approach - just re-check via usuarios table
+  }catch(e){}
+}
+
+// Refresh plan when tab becomes visible again (user returns to app)
+document.addEventListener('visibilitychange',async function(){
+  if(document.visibilityState==='visible'&&state.user){
+    try{
+      var r=await api('check-plano?usuario_id='+state.user.id);
+      if(r&&r.plano&&r.plano!==state.plano){
+        setState({plano:r.plano});
+        showToast('Plano atualizado: '+PLANOS[r.plano].nome+' '+PLANOS[r.plano].emoji);
+      }
+    }catch(e){}
+  }
+});
+
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 render();
 </script>
