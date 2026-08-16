@@ -1,5 +1,4 @@
 const { createClient } = require('@supabase/supabase-js');
-
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_KEY
@@ -23,10 +22,18 @@ module.exports = async (req, res) => {
     .eq('senha', senha)
     .single();
 
-  if (error || !data) return res.status(401).json({ error: 'E-mail ou senha incorretos.' });
+  if (error || !data)
+    return res.status(401).json({ error: 'E-mail ou senha incorretos.' });
 
   return res.status(200).json({
     ok: true,
-    user: { id: data.id, nome: data.nome, email: data.email, uf: data.uf, is_pro: data.is_pro }
+    user: {
+      id: data.id,
+      nome: data.nome,
+      email: data.email,
+      uf: data.uf,
+      is_pro: data.is_pro,
+      plano: data.plano || 'ferreiro'   // ← campo adicionado
+    }
   });
 };
