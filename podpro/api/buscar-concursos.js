@@ -1,9 +1,10 @@
 const { createClient } = require('@supabase/supabase-js');
-
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_KEY
 );
+
+const CACHE_DIAS = 15; // dias antes de buscar novamente
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -16,19 +17,33 @@ module.exports = async (req, res) => {
   if (!uf || !estado) return res.status(400).json({ error: 'UF e estado obrigatórios' });
 
   try {
-    // Tenta buscar do cache primeiro
+    // Tenta buscar do cache
     const { data: cache } = await supabase
       .from('concursos_cache')
       .select('editais, atualizado_em')
       .eq('uf', uf)
       .single();
 
-    if (cache && cache.editais) {
-      const editais = JSON.parse(cache.editais);
-      return res.status(200).json({ ok: true, editais, fonte: 'cache', atualizado_em: cache.atualizado_em });
+    // ✅ Verifica se o cache existe E ainda está dentro do prazo
+    if (cache && cache.editais && cache.atualizado_em) {
+      const idadeMs = Date.now() - new Date(cache.atualizado_em).getTime();
+      const idadeDias = idadeMs / (1000 * 60 * 60 * 24);
+
+      if (idadeDias < CACHE_DIAS) {
+        // Cache válido — retorna sem buscar na API
+        console.log(`Cache válido para ${uf}: ${Math.floor(idadeDias)} dias`);
+        const editais = JSON.parse(cache.editais);
+        return res.status(200).json({
+          ok: true,
+          editais,
+          fonte: 'cache',
+          atualizado_em: cache.atualizado_em
+        });
+      }
+      console.log(`Cache expirado para ${uf}: ${Math.floor(idadeDias)} dias — buscando novo`);
     }
 
-    // Se não tem cache, busca ao vivo
+    // Cache não existe ou expirou — busca ao vivo
     const apiKey = process.env.ANTHROPIC_KEY;
     if (!apiKey) return res.status(500).json({ error: 'Chave não configurada' });
 
@@ -54,21 +69,30 @@ module.exports = async (req, res) => {
     const data = await response.json();
     const txt = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
     const m = txt.match(/\{[\s\S]*"editais"[\s\S]*\}/);
-    if (!m) throw new Error('sem JSON');
+    if (!m) throw new Error('sem JSON na resposta');
 
     const editais = JSON.parse(m[0]).editais || [];
+    const agora = new Date().toISOString();
 
-    // Salva no cache
+    // Salva cache com data atual
     await supabase.from('concursos_cache').upsert({
-      uf, estado,
+      uf,
+      estado,
       editais: JSON.stringify(editais),
-      atualizado_em: new Date().toISOString()
+      atualizado_em: agora
     }, { onConflict: 'uf' });
 
-    return res.status(200).json({ ok: true, editais, fonte: 'live' });
+    console.log(`✅ Cache atualizado para ${uf}: ${editais.length} editais`);
+
+    return res.status(200).json({
+      ok: true,
+      editais,
+      fonte: 'live',
+      atualizado_em: agora
+    });
 
   } catch (err) {
-    console.error('buscar-concursos error:', err);
+    console.error('buscar-concursos error:', err.message);
     return res.status(500).json({ error: err.message });
   }
 };
