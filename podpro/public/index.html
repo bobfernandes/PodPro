@@ -1753,12 +1753,13 @@ async function handleAuth(){
     if(!r.ok){showToast(r.msg,"e");setState({aLoading:false});return;}
     showToast("Conta criada! Bem-vinda! 🎓");
     setState({user:r.user,plano:r.user.plano||'ferreiro',scr:"home",aLoading:false});
-    loadUserData(r.user);
+    loadUserData(Object.assign({},r.user,{plano:r.user.plano||'ferreiro'}));
   }else{
     var r=await loginUser(email,senha);
     if(!r.ok){showToast(r.msg,"e");setState({aLoading:false});return;}
     showToast("Olá, "+r.user.nome+"! 👋");
-    setState({user:r.user,plano:r.user.plano||'ferreiro',scr:"home",aLoading:false});
+    var planoReal=r.user.plano||'ferreiro';
+    setState({user:r.user,plano:planoReal,scr:"home",aLoading:false});
     loadUserData(r.user);
   }
 }
@@ -2071,32 +2072,6 @@ function bindEvents(){
 }
 
 // ─── AUTO-REFRESH PLAN ON FOCUS ──────────────────────────────────────────────
-async function refreshPlano(){
-  if(!state.user)return;
-  try{
-    var r=await fetch('/api/login',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({email:state.user.email,senha:'_check_plano_',_refresh:true})
-    });
-    // If login fails, just try to get user data differently
-    // For now use a simpler approach - just re-check via usuarios table
-  }catch(e){}
-}
-
-// Refresh plan when tab becomes visible again (user returns to app)
-document.addEventListener('visibilitychange',async function(){
-  if(document.visibilityState==='visible'&&state.user){
-    try{
-      var r=await api('check-plano?usuario_id='+state.user.id);
-      if(r&&r.plano&&r.plano!==state.plano){
-        setState({plano:r.plano});
-        showToast('Plano atualizado: '+PLANOS[r.plano].nome+' '+PLANOS[r.plano].emoji);
-      }
-    }catch(e){}
-  }
-});
-
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 render();
 </script>
