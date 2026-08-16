@@ -1614,7 +1614,7 @@ function renderAdm(){
 
   var CATS=[{k:"geral",l:"📖 Geral"},{k:"bncc",l:"📘 BNCC"},{k:"autores",l:"✍️ Autoras/Autores"},{k:"legislacao",l:"⚖️ Legislação"},{k:"resumo",l:"📋 Resumos"}];
   var BANCAS=["VUNESP","FCC","CEBRASPE","FGV","IBFC","AOCP","FAFIPA","FUNDATEC"];
-  var planOrder=['ferreiro','libaneo','vygotsky','piaget'].filter(function(k){return state.planosAtivos[k]!==false;});
+  var pa=state.planosAtivos||{}; var planOrder=['ferreiro','libaneo','vygotsky','piaget'].filter(function(k){return pa[k]!==false;});
 
   // All content (videos + ebooks) mixed
   var allContent=state.videoaulas.map(function(v){return Object.assign({},v,{_tipo:'video'});})
@@ -1785,6 +1785,9 @@ function navTo(scr){
     setState({scr:"ebooks",selEbook:null,eLoading:true});
     loadEbooksAPI().then(function(e){setState({ebooks:e,eLoading:false});});
     return;
+  }
+  if(scr==='planos'){
+    loadConfiguracoes();  // sempre atualiza configs ao abrir planos
   }
   setState({scr:scr,selVaga:null,selVideoaula:null});
 }
