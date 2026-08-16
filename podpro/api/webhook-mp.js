@@ -1,108 +1,104 @@
-// api/webhook-mp.js
-// Recebe notificações do Mercado Pago e atualiza o plano do usuário
+// api/webhook-mp.js — Processa eventos de assinatura e pagamentos do MP
 const { createClient } = require('@supabase/supabase-js');
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
-);
-
-// Hierarquia de planos (upgrades apenas avançam, nunca retrocedem)
 const NIVEL_PLANO = { ferreiro: 0, libaneo: 1, vygotsky: 2, piaget: 3 };
+
+async function atualizarPlano(usuario_id, plano) {
+  const { data: user } = await supabase
+    .from('usuários').select('plano').eq('id', usuario_id).single();
+
+  const planoAtual = user?.plano || 'ferreiro';
+  if ((NIVEL_PLANO[plano] ?? 0) >= (NIVEL_PLANO[planoAtual] ?? 0)) {
+    await supabase.from('usuários').update({ plano }).eq('id', usuario_id);
+    console.log(`✅ Plano atualizado: ${usuario_id} → ${plano}`);
+  }
+}
+
+async function parseRef(external_reference) {
+  try { return JSON.parse(external_reference); } catch { return null; }
+}
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
 
-  // MP envia GET ou POST dependendo do tipo de notificação
-  if (req.method === 'GET') {
-    // Teste de conectividade
-    return res.status(200).json({ ok: true });
-  }
-
-  if (req.method !== 'POST') {
-    return res.status(405).end();
-  }
+  if (req.method === 'GET') return res.status(200).json({ ok: true });
+  if (req.method !== 'POST') return res.status(405).end();
 
   try {
-    const { type, data } = req.body;
+    const { type, data, action } = req.body;
+    console.log('Webhook MP:', type || action, data?.id);
 
-    // Só processamos pagamentos aprovados
-    if (type !== 'payment') {
-      return res.status(200).json({ ok: true, msg: 'tipo ignorado: ' + type });
+    // ── 1. Pagamento de assinatura aprovado ──────────────────────────────────
+    if (type === 'payment') {
+      const paymentId = data?.id;
+      if (!paymentId) return res.status(200).json({ ok: true, msg: 'sem id' });
+
+      const pmRes = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+        headers: { Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}` },
+      });
+      const payment = await pmRes.json();
+
+      console.log(`Payment ${paymentId}: status=${payment.status}`);
+
+      if (payment.status !== 'approved') {
+        return res.status(200).json({ ok: true, msg: 'não aprovado: ' + payment.status });
+      }
+
+      const ref = await parseRef(payment.external_reference);
+      if (!ref?.usuario_id || !ref?.plano) {
+        return res.status(200).json({ ok: false, msg: 'external_reference inválido' });
+      }
+
+      await atualizarPlano(ref.usuario_id, ref.plano);
+
+      await supabase.from('pagamentos').upsert({
+        usuario_id: ref.usuario_id,
+        plano: ref.plano,
+        mp_payment_id: String(paymentId),
+        mp_status: 'approved',
+        valor: payment.transaction_amount,
+      }, { onConflict: 'mp_payment_id' });
+
+      return res.status(200).json({ ok: true });
     }
 
-    const paymentId = data?.id;
-    if (!paymentId) return res.status(200).json({ ok: true, msg: 'sem payment id' });
+    // ── 2. Assinatura (preapproval) autorizada ────────────────────────────────
+    if (type === 'subscription_preapproval' || action === 'updated') {
+      const preapprovalId = data?.id;
+      if (!preapprovalId) return res.status(200).json({ ok: true });
 
-    // Consultar detalhes do pagamento no MP
-    const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-      headers: { Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}` },
-    });
+      const paRes = await fetch(`https://api.mercadopago.com/preapproval/${preapprovalId}`, {
+        headers: { Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}` },
+      });
+      const pa = await paRes.json();
 
-    if (!mpRes.ok) {
-      console.error('Falha ao consultar MP payment', paymentId);
-      return res.status(200).json({ ok: false, msg: 'Falha MP query' });
+      console.log(`Preapproval ${preapprovalId}: status=${pa.status}`);
+
+      // Quando o usuário autoriza o cartão, status vira 'authorized'
+      if (pa.status === 'authorized') {
+        const ref = await parseRef(pa.external_reference);
+        if (ref?.usuario_id && ref?.plano) {
+          await atualizarPlano(ref.usuario_id, ref.plano);
+        }
+      }
+
+      // Se cancelada/pausada, rebaixa pro ferreiro
+      if (pa.status === 'cancelled' || pa.status === 'paused') {
+        const ref = await parseRef(pa.external_reference);
+        if (ref?.usuario_id) {
+          await supabase.from('usuários').update({ plano: 'ferreiro' }).eq('id', ref.usuario_id);
+          console.log(`⚠️ Assinatura ${pa.status}: ${ref.usuario_id} → ferreiro`);
+        }
+      }
+
+      return res.status(200).json({ ok: true });
     }
 
-    const payment = await mpRes.json();
-
-    console.log(`Webhook MP: payment ${paymentId} status=${payment.status}`);
-
-    // Só atualiza se pagamento aprovado
-    if (payment.status !== 'approved') {
-      return res.status(200).json({ ok: true, msg: 'pagamento não aprovado: ' + payment.status });
-    }
-
-    // Decodificar referência externa: { usuario_id, plano }
-    let ref;
-    try {
-      ref = JSON.parse(payment.external_reference);
-    } catch {
-      console.error('external_reference inválido:', payment.external_reference);
-      return res.status(200).json({ ok: false, msg: 'external_reference inválido' });
-    }
-
-    const { usuario_id, plano } = ref;
-
-    if (!usuario_id || !plano) {
-      return res.status(200).json({ ok: false, msg: 'ref incompleta' });
-    }
-
-    // Buscar plano atual do usuário
-    const { data: user } = await supabase
-      .from('usuários')
-      .select('plano')
-      .eq('id', usuario_id)
-      .single();
-
-    const planoAtual = user?.plano || 'ferreiro';
-    const nivelAtual = NIVEL_PLANO[planoAtual] ?? 0;
-    const nivelNovo  = NIVEL_PLANO[plano] ?? 0;
-
-    // Só atualiza se o novo plano for superior (ou igual ao já pago)
-    if (nivelNovo >= nivelAtual) {
-      await supabase
-        .from('usuários')
-        .update({ plano })
-        .eq('id', usuario_id);
-
-      console.log(`Plano atualizado: usuário ${usuario_id} → ${plano}`);
-    }
-
-    // Registrar pagamento aprovado
-    await supabase.from('pagamentos').insert({
-      usuario_id,
-      plano,
-      mp_payment_id: String(paymentId),
-      mp_status: 'approved',
-      valor: payment.transaction_amount,
-    });
-
-    return res.status(200).json({ ok: true });
+    return res.status(200).json({ ok: true, msg: 'tipo ignorado: ' + type });
 
   } catch (err) {
-    console.error('webhook-mp error:', err);
-    // SEMPRE retornar 200 para o MP não re-tentar infinitamente
+    console.error('webhook error:', err);
     return res.status(200).json({ ok: false, error: err.message });
   }
 };

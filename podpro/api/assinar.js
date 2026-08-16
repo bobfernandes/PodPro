@@ -1,16 +1,11 @@
-// api/assinar.js
-// Cria preferência de pagamento no Mercado Pago para o plano escolhido
+// api/assinar.js — Assinatura mensal automática via Mercado Pago Preapproval
 const { createClient } = require('@supabase/supabase-js');
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
-);
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
 const PLANOS = {
-  libaneo:  { nome: 'Plano Libâneo',  valor: 7.97  },
-  vygotsky: { nome: 'Plano Vygotsky', valor: 17.97 },
-  piaget:   { nome: 'Plano Piaget',   valor: 27.97 },
+  libaneo:  { nome: 'Plano Libâneo – PodPrô',  valor: 7.97  },
+  vygotsky: { nome: 'Plano Vygotsky – PodPrô', valor: 17.97 },
+  piaget:   { nome: 'Plano Piaget – PodPrô',   valor: 27.97 },
 };
 
 module.exports = async (req, res) => {
@@ -20,72 +15,67 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido' });
 
-  const { usuario_id, email, nome, plano, valor } = req.body;
-
+  const { usuario_id, email, nome, plano } = req.body;
   if (!usuario_id || !email || !plano) {
     return res.status(400).json({ error: 'usuario_id, email e plano são obrigatórios' });
   }
 
   const planInfo = PLANOS[plano];
-  if (!planInfo) {
-    return res.status(400).json({ error: 'Plano inválido. Use: libaneo, vygotsky ou piaget' });
-  }
+  if (!planInfo) return res.status(400).json({ error: 'Plano inválido' });
 
-  // Valor final: usa o passado pelo cliente ou o cadastrado no servidor (servidor vence)
-  const valorFinal = planInfo.valor;
+  const appUrl = process.env.APP_URL || 'https://project-lfk7g.vercel.app';
 
   try {
-    // Referência externa: identifica usuário e plano no webhook
-    const externalReference = JSON.stringify({ usuario_id, plano });
+    // ── Cria assinatura recorrente mensal via Preapproval ──────────────────
+    const preapprovalBody = {
+      reason: planInfo.nome,
+      external_reference: JSON.stringify({ usuario_id, plano }),
+      payer_email: email,
 
-    const preferenceBody = {
-      items: [{
-        title: planInfo.nome + ' – PodPrô',
-        description: 'Acesso mensal ao ' + planInfo.nome + ' no PodPrô',
-        quantity: 1,
+      auto_recurring: {
+        frequency: 1,
+        frequency_type: 'months',       // cobrança mensal
+        transaction_amount: planInfo.valor,
         currency_id: 'BRL',
-        unit_price: valorFinal,
-      }],
-      payer: { email },
-      external_reference: externalReference,
-      back_urls: {
-        success: `${process.env.APP_URL || req.headers.origin}?assinatura=sucesso&plano=${plano}`,
-        failure: `${process.env.APP_URL || req.headers.origin}?assinatura=falha`,
-        pending: `${process.env.APP_URL || req.headers.origin}?assinatura=pendente`,
+        // ✅ Só cartão de crédito
+        payment_methods_allowed: {
+          payment_types: [{ id: 'credit_card' }],
+        },
       },
-      auto_return: 'approved',
-      notification_url: `${process.env.APP_URL || req.headers.origin}/api/webhook-mp`,
-      statement_descriptor: 'PODPRO',
+
+      back_url: `${appUrl}?assinatura=sucesso&plano=${plano}`,
+      status: 'pending',
     };
 
-    const mpResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
+    const mpRes = await fetch('https://api.mercadopago.com/preapproval', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`,
       },
-      body: JSON.stringify(preferenceBody),
+      body: JSON.stringify(preapprovalBody),
     });
 
-    const mpData = await mpResponse.json();
+    const mpData = await mpRes.json();
 
-    if (!mpResponse.ok) {
-      console.error('MP error:', mpData);
-      return res.status(500).json({ error: 'Erro ao criar preferência no Mercado Pago' });
+    if (!mpRes.ok) {
+      console.error('MP Preapproval error:', JSON.stringify(mpData));
+      return res.status(500).json({ error: 'Erro ao criar assinatura no Mercado Pago', detail: mpData });
     }
 
-    // Registrar tentativa de pagamento
+    // Log no Supabase
     await supabase.from('pagamentos').insert({
       usuario_id,
       plano,
+      mp_payment_id: mpData.id,        // ID da assinatura/preapproval
       mp_status: 'pending',
-      valor: valorFinal,
+      valor: planInfo.valor,
     });
 
     return res.status(200).json({
       ok: true,
-      init_point: mpData.init_point,
-      sandbox_init_point: mpData.sandbox_init_point,
+      init_point: mpData.init_point,   // URL do checkout MP
+      preapproval_id: mpData.id,
     });
 
   } catch (err) {
