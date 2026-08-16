@@ -1341,7 +1341,7 @@ function initTrilha(){
 
 function renderPlanos(){
   const current=state.plano||'ferreiro';
-  const planOrder=['ferreiro','libaneo','vygotsky','piaget'];
+  var _pa=state.planosAtivos||{}; var planOrder=['ferreiro','libaneo','vygotsky','piaget'].filter(function(k){return _pa[k]!==false;});
   const planLabels={ferreiro:'Comece grátis',libaneo:'Assinar',vygotsky:'Assinar',piaget:'Assinar'};
 
   // Feature rows per card
