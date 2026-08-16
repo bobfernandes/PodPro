@@ -710,8 +710,9 @@ const FEATURES = [
   {lb:'Trilha de Simulados 🎓 (19 módulos de Pedagogia)',      plano:'ferreiro'},
   {lb:'Fichas de Memorização 📌',                              plano:'ferreiro'},
   {lb:'Kit Pedagoga Concurseira (E-books com resumos)',         plano:'ferreiro'},
-  {lb:'Editais perto de você – Radar dos Concursos',           plano:'libaneo'},
+  {lb:'Radar dos Concursos – editais do seu estado',           plano:'libaneo'},
   {lb:'Links para bancas e atualizações de concursos',         plano:'libaneo'},
+  {lb:'Radar Nacional – pesquise em qualquer estado 🗺️',        plano:'piaget'},
   {lb:'Resumos esquemáticos de Conhecimentos Pedagógicos',     plano:'libaneo'},
   {lb:'Legislação educacional esquematizada com atualizações', plano:'vygotsky'},
   {lb:'Resumos de autoras e autores mais cobrados',            plano:'vygotsky'},
@@ -897,7 +898,7 @@ async function loadConcursos(uf){
 const state={
   scr:"auth",aMode:"login",aLoading:false,_showPwd:false,simModId:1,simBanca:"TODAS",simQuiz:null,simDone:false,theme:(function(){try{return localStorage.getItem("podpro-theme")||"light"}catch(e){return"light"}})(),cAtualizado:"",cProxima:"",
   user:null,plano:"ferreiro",
-  concursos:[],cLoading:false,cFonte:"",selVaga:null,
+  concursos:[],cLoading:false,cFonte:"",selVaga:null,radarUf:null,
   tasks:[],filtroTask:"todas",
   bancaSel:null,qIdx:0,qAns:null,qScore:0,qDone:false,qHistory:[],
   toast:null,toastTimer:null,upgModal:false,upgPlano:null,
@@ -1160,13 +1161,83 @@ function renderAuth(){
 
 function renderVagas(){
   if(!hasAccess('libaneo')){
-    return'<div class="screen fade-up" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;text-align:center"><span style="font-size:60px">📡</span><h2 style="font-size:22px;font-weight:900;color:var(--text);margin:16px 0 8px">Radar dos Concursos</h2><p style="color:var(--text-sec);font-size:14px;max-width:280px;margin-bottom:24px">Acompanhe editais organizados por localidade com o plano Libâneo ou superior.</p><button class="btn btn-pink" id="btnUpgLibaneo" style="padding:14px 28px;font-size:15px">Ver planos – a partir de R$ 7,97/mês</button></div>'+renderNav("vagas");
+    return'<div class="screen fade-up" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;text-align:center">'
+      +'<span style="font-size:60px">📡</span>'
+      +'<h2 style="font-size:22px;font-weight:900;color:var(--text);margin:16px 0 8px">Radar dos Concursos</h2>'
+      +'<p style="color:var(--text-sec);font-size:14px;max-width:280px;margin-bottom:24px">Acompanhe editais de educação do seu estado em tempo real</p>'
+      +'<button class="btn btn-pink" id="btnUpgLibaneo" style="padding:14px 28px;font-size:15px">Assinar Libâneo – R$ 7,97/mês</button>'
+    +'</div>'+renderNav("vagas");
   }
+
+  // Piaget: seletor de estado; Libâneo/Vygotsky: só estado do cadastro
+  var isPiaget=hasAccess('piaget');
+  var ufAtual=state.radarUf||(state.user?state.user.uf:'SP');
+
+  var headerExtra='';
+  if(isPiaget){
+    headerExtra='<div style="display:flex;gap:8px;margin-bottom:14px">'
+      +'<select class="inp" id="radarUfSel" style="flex:1;border-radius:50px">'
+      +Object.entries(UF).sort(function(a,b){return a[1].localeCompare(b[1]);}).map(function(e){
+        return'<option value="'+e[0]+'" '+(e[0]===ufAtual?'selected':'')+'>'+e[1]+' ('+e[0]+')</option>';
+      }).join('')
+      +'</select>'
+      +'<button class="btn btn-pink" id="btnRadarBuscar" style="padding:0 20px;border-radius:50px;font-size:14px">Buscar</button>'
+    +'</div>';
+  }else{
+    headerExtra='<div style="background:var(--inp-bg);border-radius:14px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:8px">'
+      +'<span style="font-size:18px">📍</span>'
+      +'<div>'
+        +'<p style="font-size:11px;color:var(--text-muted);font-weight:700">SEU ESTADO</p>'
+        +'<p style="font-size:15px;font-weight:800;color:var(--text)">'+(UF[ufAtual]||ufAtual)+'</p>'
+      +'</div>'
+      +(isPiaget?'':'<p style="font-size:11px;color:var(--text-muted);margin-left:auto">Piaget: pesquise<br/>qualquer estado 🗺️</p>')
+    +'</div>';
+  }
+
   if(state.selVaga){
-    const v=state.selVaga;
-    return'<div class="screen fade-up"><button class="btn btn-ghost" id="btnVagaBack" style="padding:8px 16px;font-size:13px;margin-bottom:18px;color:var(--text)">← Voltar</button><div class="card" style="padding:22px"><div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">'+statusTag(v.status)+'</div><h2 style="font-size:20px;font-weight:900;line-height:1.4;color:var(--text)">'+v.cargo+'</h2><p style="color:var(--text-sec);margin-top:4px;font-size:13px">📍 '+v.cidade+'</p><div style="display:flex;gap:7px;margin-top:14px;flex-wrap:wrap">'+chip(v.banca?"🏦 "+v.banca:"")+chip(v.vagas?"👥 "+v.vagas+" vagas":"")+chip(v.salario?"💰 "+v.salario:"")+chip(v.inscricao?"📅 "+v.inscricao:"")+'</div><p style="margin-top:18px;color:var(--text-sec);font-size:14px;line-height:1.8">'+v.descricao+'</p>'+(v.link?'<a href="'+v.link+'" target="_blank" rel="noreferrer" style="display:block;margin-top:18px;background:var(--pink);color:#fff;border-radius:50px;padding:14px;text-align:center;font-weight:800;font-size:14px;text-decoration:none">🔗 Ver edital / site da banca</a>':'')+'<p style="font-size:11px;color:var(--text-muted);margin-top:14px;line-height:1.6">⚠️ Confirme sempre no Diário Oficial ou site oficial da banca antes de se inscrever.</p></div></div>'+renderNav("vagas");
+    var v=state.selVaga;
+    return'<div class="screen fade-up">'
+      +'<button class="btn btn-ghost" id="btnVagaBack" style="padding:8px 16px;font-size:13px;margin-bottom:18px;color:var(--text)">← Voltar</button>'
+      +'<h2 style="font-size:20px;font-weight:900;color:var(--text);margin-bottom:6px">'+v.cargo+'</h2>'
+      +'<p style="color:var(--text-sec);font-size:14px;margin-bottom:16px">📍 '+v.cidade+'</p>'
+      +'<div style="display:flex;flex-direction:column;gap:10px">'
+        +'<div class="card" style="padding:16px"><p style="font-size:13px;line-height:1.7;color:var(--text-sec)">'+v.descricao+'</p></div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+          +[{l:'🏦 Banca',v:v.banca},{l:'👥 Vagas',v:v.vagas},{l:'💰 Salário',v:v.salario},{l:'📅 Inscrições',v:v.inscricao}]
+            .filter(function(i){return i.v;})
+            .map(function(i){return'<div class="card" style="padding:12px"><p style="font-size:10px;color:var(--text-muted);font-weight:700">'+i.l+'</p><p style="font-weight:800;font-size:13px;color:var(--text);margin-top:3px">'+i.v+'</p></div>';}).join('')
+        +'</div>'
+        +(v.link?'<a href="'+v.link+'" target="_blank" rel="noreferrer" class="btn btn-pink" style="padding:14px;font-size:14px;text-align:center;text-decoration:none;border-radius:20px">🔗 Ver edital completo</a>':'')
+      +'</div>'
+    +'</div>'+renderNav("vagas");
   }
-  return'<div class="screen fade-up"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><h2 style="font-size:22px;font-weight:900;color:var(--text)">📡 Radar</h2><button class="btn btn-ghost" id="btnVagasRefresh" style="padding:6px 14px;font-size:12px;border-radius:20px;color:var(--text)">'+(state.cLoading?"…":"↻ Atualizar")+'</button></div><p style="color:var(--text-sec);font-size:13px;margin-bottom:6px">'+(state.user?UF[state.user.uf]||state.user.uf:"")+'</p>'+(state.cAtualizado?'<div style="background:rgba(212,32,122,.07);border-radius:10px;padding:9px 14px;margin-bottom:14px;font-size:12px;color:var(--text-sec)">📅 Atualizado <b>'+state.cAtualizado+'</b> · Próxima atualização: <b>'+state.cProxima+'</b></div>':"")+( state.cLoading?'<div style="text-align:center;padding:40px 0"><div class="loader spin" style="margin:0 auto"></div></div>':'')+'<div style="display:flex;flex-direction:column;gap:10px">'+state.concursos.map((v,i)=>'<button class="btn card" data-vagaidx="'+i+'" style="padding:16px;text-align:left;width:100%;border-radius:18px"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="flex:1;padding-right:8px"><p style="font-weight:800;font-size:15px;line-height:1.35;color:var(--text)">'+v.cargo+'</p><p style="color:var(--text-sec);font-size:12px;margin-top:3px">📍 '+v.cidade+'</p></div>'+statusTag(v.status)+'</div><p style="color:var(--text-sec);font-size:11px;line-height:1.5;margin:7px 0">'+(v.descricao||"").slice(0,100)+'…</p><div style="display:flex;gap:6px;flex-wrap:wrap">'+chip(v.banca?"🏦 "+v.banca:"")+chip(v.vagas?"👥 "+v.vagas:"")+chip(v.salario?"💰 "+v.salario:"")+'</div></button>').join("")+'</div></div>'+renderNav("vagas");
+
+  return'<div class="screen fade-up">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
+      +'<div>'
+        +'<h2 style="font-size:22px;font-weight:900;color:var(--text);font-family:\'Playfair Display\',serif">📡 Radar</h2>'
+        +'<p style="color:var(--text-muted);font-size:13px">'+(isPiaget?'Pesquise em qualquer estado':'Concursos de '+( UF[ufAtual]||ufAtual))+'</p>'
+      +'</div>'
+      +'<button class="btn btn-ghost" id="btnVagasRefresh" style="padding:8px 14px;font-size:13px;color:var(--text)">↻ Atualizar</button>'
+    +'</div>'
+    +headerExtra
+    +(state.cAtualizado?'<div style="background:var(--inp-bg);border-radius:12px;padding:8px 14px;margin-bottom:14px;font-size:12px;color:var(--text-muted)">📅 Atualizado '+state.cAtualizado+' · Próxima: '+state.cProxima+'</div>':'')
+    +(state.cLoading
+      ?'<div style="text-align:center;padding:40px 0"><div class="loader spin" style="margin:0 auto"></div><p style="color:var(--text-muted);margin-top:16px;font-size:14px">Buscando concursos...</p></div>'
+      :state.concursos.length===0
+        ?'<div style="text-align:center;padding:40px 0;color:var(--text-muted)"><p style="font-size:46px">🔍</p><p style="margin-top:12px;font-size:14px">Nenhum concurso encontrado.</p></div>'
+        :'<div style="display:flex;flex-direction:column;gap:10px">'+state.concursos.map(function(v,i){
+          return'<button class="btn card" data-vaga="'+i+'" style="padding:16px;text-align:left;width:100%">'
+            +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">'
+              +'<div style="flex:1"><p style="font-weight:800;font-size:15px;line-height:1.4;color:var(--text)">'+v.cargo+'</p>'
+              +'<p style="color:var(--text-muted);font-size:12px;margin-top:3px">📍 '+v.cidade+'</p></div>'
+              +statusTag(v.status)
+            +'</div>'
+            +'<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">'+chip(v.banca?"🏦 "+v.banca:"")+chip(v.vagas?"👥 "+v.vagas+" vagas":"")+chip(v.salario?"💰 "+v.salario:"")+'</div>'
+          +'</button>';
+        }).join('')+'</div>'
+    )
+  +'</div>'+renderNav("vagas");
 }
 
 function renderQuizMenu(){
@@ -1786,7 +1857,8 @@ async function navTo(scr){
   }
   if(scr==="vagas"){
     setState({scr:"vagas",selVaga:null});
-    if(state.concursos.length===0&&!state.cLoading&&state.user)loadConcursos(state.user.uf);
+    var ufRadar=state.radarUf||state.user.uf;
+    if(state.concursos.length===0&&!state.cLoading&&state.user)loadConcursos(ufRadar);
     return;
   }
   if(scr==="ebooks"){
@@ -1859,7 +1931,17 @@ function bindEvents(){
   });});
 
   on("btnVagaBack","click",function(){setState({selVaga:null});});
-  on("btnVagasRefresh","click",function(){if(!state.cLoading&&state.user)loadConcursos(state.user.uf);});
+  on("btnVagasRefresh","click",function(){
+    var uf=hasAccess('piaget')?(document.getElementById('radarUfSel')?document.getElementById('radarUfSel').value:state.radarUf||state.user.uf):state.user.uf;
+    if(!state.cLoading&&state.user){setState({concursos:[],cAtualizado:'',radarUf:uf});loadConcursos(uf);}
+  });
+  on("btnRadarBuscar","click",function(){
+    var sel=document.getElementById('radarUfSel');
+    if(!sel)return;
+    var uf=sel.value;
+    setState({concursos:[],cAtualizado:'',radarUf:uf});
+    loadConcursos(uf);
+  });
   document.querySelectorAll("[data-vagaidx]").forEach(function(btn){btn.addEventListener("click",function(){setState({selVaga:state.concursos[parseInt(btn.dataset.vagaidx)]});});});
   document.querySelectorAll("[data-vaga]").forEach(function(btn){btn.addEventListener("click",function(){setState({selVaga:state.concursos[parseInt(btn.dataset.vaga)],scr:"vagas"});});});
 
