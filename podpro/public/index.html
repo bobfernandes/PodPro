@@ -884,7 +884,7 @@ async function loadConcursos(uf){
     const editais=data.editais||[];
     if(editais.length===0)throw new Error('vazio');
     const fmt=d=>d.toLocaleDateString('pt-BR');
-    const atuEm=data.atualizado_em?new Date(data.atualizado_em):new Date();
+    const atuEm=new Date();  // sempre usa data atual quando dados chegam frescos
     const proxima=new Date(atuEm);proxima.setDate(proxima.getDate()+15);
     setState({concursos:editais,cFonte:data.fonte||'live',cLoading:false,cAtualizado:fmt(atuEm),cProxima:fmt(proxima)});
     showToast(editais.length+' concursos encontrados! 🎯');
