@@ -851,10 +851,17 @@ async function toggleVideoaulaAPI(pass,id,ativo){return api('videoaulas',{method
 async function loadConfiguracoes(){
   try{
     var r=await api('configuracoes');
-    if(r.configuracoes&&r.configuracoes.planos_ativos){
-      setState({planosAtivos:r.configuracoes.planos_ativos});
+    console.log('[Config]', JSON.stringify(r));
+    if(r&&r.configuracoes&&r.configuracoes.planos_ativos){
+      var pa=r.configuracoes.planos_ativos;
+      console.log('[planosAtivos]', JSON.stringify(pa));
+      setState({planosAtivos:pa});
+    }else{
+      console.warn('[Config] planos_ativos não encontrado na resposta');
     }
-  }catch(e){console.warn('Config load error:',e);}
+  }catch(e){
+    console.error('[Config error]', e.message);
+  }
 }
 
 async function saveConfiguracoes(chave,valor){
@@ -1767,7 +1774,7 @@ async function loadUserData(user){
   if(params.get('assinatura')==='sucesso'){showToast('Pagamento confirmado! 🎉');window.history.replaceState({},'',window.location.pathname);}
 }
 
-function navTo(scr){
+async function navTo(scr){
   if(scr==="fichas"){setState({scr:"fichas"});return;}
   if(scr==="simulados"){setState({scr:"simulados",simQuiz:null,simDone:false});return;}
   if(scr==="videoaulas"){
@@ -1787,7 +1794,7 @@ function navTo(scr){
     return;
   }
   if(scr==='planos'){
-    loadConfiguracoes();  // sempre atualiza configs ao abrir planos
+    await loadConfiguracoes();  // aguarda carregar configs antes de renderizar
   }
   setState({scr:scr,selVaga:null,selVideoaula:null});
 }
