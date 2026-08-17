@@ -102,6 +102,15 @@ module.exports = async (req, res) => {
         const ref = await parseRef(pa.external_reference);
         if (ref?.usuario_id && ref?.plano) {
           await atualizarPlano(ref.usuario_id, ref.plano);
+
+          // ✅ Grava histórico em pagamentos
+          await supabase.from('pagamentos').upsert({
+            usuario_id: ref.usuario_id,
+            plano: ref.plano,
+            mp_payment_id: preapprovalId,
+            mp_status: 'approved',
+            valor: pa.auto_recurring?.transaction_amount || 0,
+          }, { onConflict: 'mp_payment_id' });
         }
       }
 
