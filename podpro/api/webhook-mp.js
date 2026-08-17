@@ -13,10 +13,10 @@ async function mpGet(path) {
 
 async function atualizarPlano(usuario_id, plano) {
   const { data: user } = await supabase
-    .from('usuários').select('plano').eq('id', usuario_id).single();
+    .from('usuarios').select('plano').eq('id', usuario_id).single();
   const planoAtual = user?.plano || 'ferreiro';
   if ((NIVEL_PLANO[plano] ?? 0) >= (NIVEL_PLANO[planoAtual] ?? 0)) {
-    await supabase.from('usuários').update({ plano }).eq('id', usuario_id);
+    await supabase.from('usuarios').update({ plano }).eq('id', usuario_id);
     console.log(`✅ Plano atualizado: ${usuario_id} → ${plano}`);
     return true;
   }
@@ -108,7 +108,7 @@ module.exports = async (req, res) => {
       if (pa.status === 'cancelled' || pa.status === 'paused') {
         const ref = await parseRef(pa.external_reference);
         if (ref?.usuario_id) {
-          await supabase.from('usuários').update({ plano:'ferreiro' }).eq('id', ref.usuario_id);
+          await supabase.from('usuarios').update({ plano:'ferreiro' }).eq('id', ref.usuario_id);
           console.log(`⚠️ Assinatura ${pa.status}: ${ref.usuario_id} → ferreiro`);
         }
       }
