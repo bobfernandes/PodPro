@@ -47,7 +47,7 @@ module.exports = async (req, res) => {
     const apiKey = process.env.ANTHROPIC_KEY;
     if (!apiKey) return res.status(500).json({ error: 'Chave não configurada' });
 
-    const prompt = `Pesquise concursos publicos abertos ou com inscricoes previstas a partir de 2026 na area de EDUCACAO (professor, pedagogo, orientador, coordenador, diretor) em ${estado}. Responda SOMENTE com JSON valido sem markdown: {"editais":[{"cargo":"string","cidade":"string","banca":"string","vagas":null,"salario":"string","inscricao":"string","status":"Aberto","descricao":"string","link":"string"}]}.`;
+    const prompt = `Pesquise concursos publicos abertos ou com inscricoes previstas a partir de 2026 na area de EDUCACAO (professor, pedagogo, orientador, coordenador, diretor) em ${estado}. Responda SOMENTE com JSON valido sem markdown: {"editais":[{"cargo":"string","cidade":"string","banca":"string","vagas":null,"salario":"string","inscricao":"string","status":"Aberto","descricao":"string","link":"string"}]} Traga TODOS os concursos encontrados, sem limite de quantidade.`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -58,7 +58,7 @@ module.exports = async (req, res) => {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
-        max_tokens: 1000,
+        max_tokens: 4000,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         messages: [{ role: 'user', content: prompt }]
       })
