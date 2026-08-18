@@ -1802,11 +1802,27 @@ function renderAdm(){
     +'</div>'
   +'</div>';
 
+  // Reactivation section
+  var reativarSection='<div class="card" style="padding:18px;margin-bottom:22px">'
+    +'<p style="font-weight:900;font-size:14px;color:var(--text);margin-bottom:4px">🔄 Reativar Plano de Usuário</p>'
+    +'<p style="color:var(--text-muted);font-size:12px;margin-bottom:14px">Use quando o pagamento foi aprovado mas o plano não atualizou</p>'
+    +'<div style="display:flex;flex-direction:column;gap:10px">'
+      +'<input class="inp" id="admReativarId" placeholder="ID do usuário (da tabela usuarios)"/>'
+      +'<select class="inp" id="admReativarPlano">'
+        +'<option value="libaneo">📚 Libâneo – R$ 7,97/mês</option>'
+        +'<option value="vygotsky">🧠 Vygotsky – R$ 17,97/mês</option>'
+        +'<option value="piaget">💡 Piaget – R$ 27,97/mês</option>'
+      +'</select>'
+      +'<button class="btn btn-pink" id="btnAdmReativar" style="padding:13px;font-size:14px">🔄 Ativar Plano</button>'
+    +'</div>'
+  +'</div>';
+
   return'<div class="screen fade-up">'
     +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">'
       +'<button class="btn btn-ghost" id="btnAdmBack" style="padding:8px 14px;font-size:13px;color:var(--text)">← Sair</button>'
       +'<h2 style="font-size:20px;font-weight:900;color:var(--text)">⚙️ Gestão de Conteúdo</h2>'
     +'</div>'
+    +reativarSection
     +planoControls
     +plansHtml
   +'</div>';
@@ -1988,6 +2004,21 @@ function bindEvents(){
   on("_themeToggle","click",function(){setState({theme:state.theme==="dark"?"light":"dark"});});
   on("btnLogout","click",function(){setState({user:null,scr:"auth",aMode:"login",concursos:[],tasks:[],qHistory:[],cFonte:"",selVaga:null,plano:"ferreiro"});});
   on("btnAdmAccess","click",function(){setState({scr:"adm",admAuthed:false,admPass:""});});
+
+  // ADM: reativar plano
+  on('btnAdmReativar','click',async function(){
+    var uid=document.getElementById('admReativarId')?document.getElementById('admReativarId').value.trim():'';
+    var plano=document.getElementById('admReativarPlano')?document.getElementById('admReativarPlano').value:'';
+    if(!uid){showToast('Informe o ID do usuário','e');return;}
+    var btn=document.getElementById('btnAdmReativar');
+    if(btn){btn.disabled=true;btn.textContent='Ativando...';}
+    try{
+      var r=await api('reativar-plano',{method:'POST',headers:{'x-admin-password':state.admPass},body:{usuario_id:uid,plano:plano}});
+      if(r.ok){showToast('✅ '+r.msg);}
+      else{showToast(r.error||'Erro ao reativar','e');}
+    }catch(e){showToast('Erro: '+e.message,'e');}
+    if(btn){btn.disabled=false;btn.textContent='🔄 Ativar Plano';}
+  });
 
   // ADM: add content per plan
   document.querySelectorAll('[data-addconteudo]').forEach(function(btn){
