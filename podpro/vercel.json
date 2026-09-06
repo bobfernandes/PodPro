@@ -1,8 +1,0 @@
-{
-  "crons": [
-    {
-      "path": "/api/renovar-assinaturas",
-      "schedule": "0 10 * * *"
-    }
-  ]
-}
