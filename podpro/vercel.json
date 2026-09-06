@@ -1,13 +1,8 @@
 {
-  "version": 2,
-  "rewrites": [
-    { "source": "/api/:path*", "destination": "/api/:path*" },
-    { "source": "/(.*)", "destination": "/public/index.html" }
-  ],
   "crons": [
     {
-      "path": "/api/atualizar-concursos",
-      "schedule": "0 6 1,15 * *"
+      "path": "/api/renovar-assinaturas",
+      "schedule": "0 10 * * *"
     }
   ]
 }
