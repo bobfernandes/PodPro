@@ -30,9 +30,15 @@ async function mpGet(path) {
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  // GET → retorna chave pública do MP (substitui mp-config.js)
+  if (req.method === 'GET') {
+    return res.status(200).json({ public_key: process.env.MP_PUBLIC_KEY || '' });
+  }
+
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido' });
 
   const { usuario_id, email, plano, token, payment_method_id,
