@@ -661,6 +661,18 @@ body { font-synthesis: none; text-rendering: optimizeSpeed; }
 button { touch-action: manipulation; }
 /* Stable card dimensions */
 .card { contain: layout style; }
+
+/* ── WhatsApp Support Button ─────────────────────────────────────────────── */
+#btnWhatsapp{
+  position:fixed;bottom:82px;right:14px;z-index:400;
+  width:52px;height:52px;border-radius:50%;border:none;cursor:pointer;
+  background:linear-gradient(135deg,#25D366,#128C7E);
+  box-shadow:0 4px 20px rgba(37,211,102,.45),0 2px 8px rgba(0,0,0,.2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:26px;transition:transform .2s,box-shadow .2s;
+  text-decoration:none;
+}
+#btnWhatsapp:hover{transform:scale(1.12);box-shadow:0 6px 28px rgba(37,211,102,.6);}
 </style>
 </head>
 <body>
@@ -970,8 +982,9 @@ function applyGlow(){
 
 function render(){
   var _dk=state.theme==='dark';
+  var _waBtn='<a id="btnWhatsapp" href="https://w.app/ayapedagogia" target="_blank" rel="noreferrer" title="Suporte via WhatsApp">💬</a>';
   var _thBtn='<button id="_themeToggle" title="'+((_dk)?'Modo Claro':'Modo Escuro')+'" style="position:fixed;top:14px;right:14px;z-index:500;width:34px;height:34px;border-radius:50%;border:1px solid rgba(245,228,192,.2);background:rgba(18,6,2,.55);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 12px rgba(0,0,0,.25);transition:transform .15s">'+(_dk?'☀️':'🌙')+'</button>';
-  document.getElementById("root").innerHTML='<div class="app"><div class="bg"></div>'+_thBtn+renderToast()+renderScreen()+renderUpgModal()+'</div>';
+  document.getElementById("root").innerHTML='<div class="app"><div class="bg"></div>'+_thBtn+_waBtn+renderToast()+renderScreen()+renderUpgModal()+'</div>';
   bindEvents();
   applyGlow();
   applyTheme(state.theme);
