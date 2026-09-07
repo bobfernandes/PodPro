@@ -1,5 +1,6 @@
 // api/pagar.js — processa pagamento via MP Brick + salva cartão para renovação
 const { createClient } = require('@supabase/supabase-js');
+const crypto = require('crypto');
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
 const PLANOS = {
@@ -9,13 +10,16 @@ const PLANOS = {
 };
 const NIVEL = { ferreiro:0, libaneo:1, vygotsky:2, piaget:3 };
 
-async function mpPost(path, body) {
+async function mpPost(path, body, idempotencyKey) {
+  const headers = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`,
+  };
+  // MP exige X-Idempotency-Key em requisições de criação (pagamentos, clientes, cartões)
+  headers['X-Idempotency-Key'] = idempotencyKey || crypto.randomUUID();
   const r = await fetch(`https://api.mercadopago.com${path}`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`,
-    },
+    headers,
     body: JSON.stringify(body),
   });
   return r.json();
