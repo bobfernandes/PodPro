@@ -108,6 +108,7 @@ module.exports = async (req, res) => {
         const ref = await parseRef(pa.external_reference);
         if (ref?.usuario_id && ref?.plano) {
           await atualizarPlano(ref.usuario_id, ref.plano);
+          await supabase.from('usuarios').update({ mp_preapproval_id: dataId }).eq('id', ref.usuario_id);
 
           // ✅ Grava histórico em pagamentos
           await supabase.from('pagamentos').upsert({
@@ -120,11 +121,15 @@ module.exports = async (req, res) => {
         }
       }
 
+      // Cancelada ou pausada — NÃO rebaixa na hora. Mantém acesso até plano_vencimento
+      // (quem cuida de rebaixar depois do vencimento é a renovar-assinaturas.js).
+      // Só marca a flag pra caso o cancelamento tenha vindo direto do lado do MP
+      // (ex: usuário cancelou pelo app do Mercado Pago, não pelo nosso).
       if (pa.status === 'cancelled' || pa.status === 'paused') {
         const ref = await parseRef(pa.external_reference);
         if (ref?.usuario_id) {
-          await supabase.from('usuarios').update({ plano:'ferreiro' }).eq('id', ref.usuario_id);
-          console.log(`⚠️ Assinatura ${pa.status}: ${ref.usuario_id} → ferreiro`);
+          await supabase.from('usuarios').update({ plano_cancelado: true }).eq('id', ref.usuario_id);
+          console.log(`⚠️ Assinatura ${pa.status}: ${ref.usuario_id} → marcado como cancelado, acesso mantido até o vencimento`);
         }
       }
 

@@ -39,7 +39,7 @@ module.exports = async (req, res) => {
 
     const { data: usuarios, error } = await supabase
       .from('usuarios')
-      .select('id, email, plano, plano_cancelado, mp_customer_id, mp_card_id, mp_card_method, plano_vencimento')
+      .select('id, email, plano, plano_cancelado, mp_customer_id, mp_card_id, mp_card_method, mp_preapproval_id, plano_vencimento')
       .not('plano', 'eq', 'ferreiro')
       .lte('plano_vencimento', amanha.toISOString());
 
@@ -66,8 +66,20 @@ module.exports = async (req, res) => {
         continue;
       }
 
-      // ── Sem cartão salvo (ex: pagou pelo checkout externo) — não dá pra ─────
-      // cobrar automaticamente, então rebaixa em vez de deixar acesso infinito.
+      // ── Assinatura nativa do MP (preapproval) — quem cobra é o próprio MP. ────
+      // Se chegou até aqui vencida, é porque a cobrança automática do MP não
+      // aconteceu (cancelada, pausada, ou falhou e o MP desistiu). Só rebaixa.
+      if (user.mp_preapproval_id) {
+        await supabase.from('usuarios')
+          .update({ plano: 'ferreiro', plano_vencimento: null, plano_cancelado: false })
+          .eq('id', user.id);
+        console.log(`⏹️ Assinatura MP não renovou: ${user.email} → rebaixado para ferreiro`);
+        resultados.push({ email: user.email, status: 'preapproval_rebaixado' });
+        continue;
+      }
+
+      // ── Sem cartão salvo nem assinatura nativa (ex: pagou pelo checkout ─────
+      // avulso antigo) — não dá pra cobrar automaticamente, então rebaixa.
       if (!user.mp_customer_id || !user.mp_card_id) {
         await supabase.from('usuarios')
           .update({ plano: 'ferreiro', plano_vencimento: null })

@@ -47,6 +47,18 @@ async function mpGet(path) {
   return r.json();
 }
 
+async function mpPut(path, body) {
+  const r = await fetch(`https://api.mercadopago.com${path}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`,
+    },
+    body: JSON.stringify(body),
+  });
+  return r.json();
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -65,10 +77,20 @@ module.exports = async (req, res) => {
     const { usuario_id } = req.body;
     if (!usuario_id) return res.status(400).json({ error: 'usuario_id ausente' });
     const { data: user, error: findErr } = await supabase.from('usuarios')
-      .select('plano,plano_vencimento').eq('id', usuario_id).single();
+      .select('plano,plano_vencimento,mp_preapproval_id').eq('id', usuario_id).single();
     if (findErr || !user) return res.status(404).json({ error: 'Usuário não encontrado' });
     if (!user.plano || user.plano === 'ferreiro')
       return res.status(400).json({ error: 'Você não tem uma assinatura paga ativa.' });
+
+    // Se tem assinatura nativa do MP, cancela lá também — pra parar a cobrança recorrente de verdade
+    if (user.mp_preapproval_id) {
+      try {
+        await mpPut(`/preapproval/${user.mp_preapproval_id}`, { status: 'cancelled' });
+        console.log(`Assinatura MP cancelada: ${user.mp_preapproval_id}`);
+      } catch (mpErr) {
+        console.error('Erro ao cancelar assinatura no MP (segue cancelando localmente):', mpErr.message);
+      }
+    }
 
     const { error: cancelErr } = await supabase.from('usuarios')
       .update({ plano_cancelado: true }).eq('id', usuario_id);
@@ -77,6 +99,46 @@ module.exports = async (req, res) => {
       return res.status(500).json({ error: 'Não foi possível cancelar. Tente novamente.' });
     }
     return res.status(200).json({ ok: true, plano_vencimento: user.plano_vencimento || null });
+  }
+
+  // ── Ação: CRIAR ASSINATURA (produto nativo do MP — página externa, salva cartão automaticamente) ──
+  if (req.body.action === 'criar_assinatura') {
+    const { usuario_id, email, plano: planoNovo } = req.body;
+    if (!usuario_id || !email || !planoNovo)
+      return res.status(400).json({ error: 'Campos obrigatórios ausentes' });
+    const planInfoNova = PLANOS[planoNovo];
+    if (!planInfoNova) return res.status(400).json({ error: 'Plano inválido' });
+
+    const origin = req.headers.origin || 'https://project-lfk7g.vercel.app';
+    try {
+      const sub = await mpPost('/preapproval', {
+        reason: planInfoNova.nome,
+        external_reference: JSON.stringify({ usuario_id, plano: planoNovo }),
+        payer_email: email,
+        auto_recurring: {
+          frequency: 1,
+          frequency_type: 'months',
+          transaction_amount: planInfoNova.valor,
+          currency_id: 'BRL',
+        },
+        back_url: `${origin}/?assinatura=sucesso`,
+        status: 'pending',
+      });
+
+      if (!sub.init_point) {
+        console.error('Erro ao criar assinatura MP:', JSON.stringify(sub));
+        const motivo = sub.message || sub.error || (sub.cause && JSON.stringify(sub.cause)) || 'Erro desconhecido';
+        return res.status(200).json({ ok: false, error: 'Não foi possível iniciar a assinatura.', debug_detail: motivo });
+      }
+
+      // Guarda o id da assinatura pendente pra já vincular quando o webhook confirmar
+      await supabase.from('usuarios').update({ mp_preapproval_id: sub.id }).eq('id', usuario_id);
+
+      return res.status(200).json({ ok: true, init_point: sub.init_point });
+    } catch (err) {
+      console.error('criar_assinatura error:', err);
+      return res.status(500).json({ error: err.message });
+    }
   }
 
   // ── Ação: CHECKOUT EXTERNO (fallback quando o Brick embutido falha, ex: Safari ITP) ──
@@ -106,6 +168,10 @@ module.exports = async (req, res) => {
         auto_return: 'approved',
         notification_url: `${origin}/api/webhook-mp`,
         statement_descriptor: 'PODPRO',
+        payment_methods: {
+          installments: 1,
+          default_installments: 1,
+        },
       });
 
       if (!pref.init_point) {
@@ -115,77 +181,6 @@ module.exports = async (req, res) => {
       return res.status(200).json({ ok: true, init_point: pref.init_point });
     } catch (err) {
       console.error('checkout_externo error:', err);
-      return res.status(500).json({ error: err.message });
-    }
-  }
-
-  // ── Ação: COBRAR CARTÃO SALVO (upgrade/troca de plano sem re-digitar cartão) ──
-  if (req.body.action === 'cobrar_cartao_salvo') {
-    const { usuario_id, plano: planoNovo } = req.body;
-    if (!usuario_id || !planoNovo) return res.status(400).json({ error: 'Campos obrigatórios ausentes' });
-    const planInfoUp = PLANOS[planoNovo];
-    if (!planInfoUp) return res.status(400).json({ error: 'Plano inválido' });
-
-    const { data: user, error: findErr } = await supabase.from('usuarios')
-      .select('email, mp_customer_id, mp_card_id, mp_card_method').eq('id', usuario_id).single();
-    if (findErr || !user) return res.status(404).json({ error: 'Usuário não encontrado' });
-    if (!user.mp_customer_id || !user.mp_card_id)
-      return res.status(400).json({ error: 'Nenhum cartão salvo encontrado. Use "Usar outro cartão".' });
-
-    try {
-      // ── 1. Gera token novo a partir do cartão salvo ──────────────────────
-      const cardToken = await mpPost(`/v1/customers/${user.mp_customer_id}/cards/${user.mp_card_id}/tokens`, {});
-      if (!cardToken.id) {
-        const motivoToken = cardToken.message || cardToken.error || (cardToken.cause && JSON.stringify(cardToken.cause)) || 'Erro desconhecido';
-        console.error('Token inválido ao cobrar cartão salvo:', JSON.stringify(cardToken));
-        return res.status(200).json({
-          ok: false,
-          error: 'Não foi possível usar o cartão salvo. Tente "Usar outro cartão".',
-          debug_detail: motivoToken,
-        });
-      }
-
-      // ── 2. Cria cobrança ──────────────────────────────────────────────────
-      const payment = await mpPost('/v1/payments', {
-        transaction_amount: planInfoUp.valor,
-        token: cardToken.id,
-        installments: 1,
-        payment_method_id: user.mp_card_method,
-        payer: { type: 'customer', id: user.mp_customer_id },
-        external_reference: JSON.stringify({ usuario_id, plano: planoNovo }),
-        description: planInfoUp.nome,
-        statement_descriptor: 'PODPRO',
-      });
-
-      console.log('Payment (cartão salvo) raw:', JSON.stringify(payment));
-
-      if (!payment.id) {
-        const motivo = payment.message || payment.error || (payment.cause && JSON.stringify(payment.cause)) || 'Erro desconhecido';
-        console.error('Erro de API ao cobrar cartão salvo:', motivo);
-        return res.status(200).json({ ok: false, status: 'api_error', error: 'Não foi possível processar. Tente novamente.', debug_detail: motivo });
-      }
-
-      const { error: insertErr } = await supabase.from('pagamentos').insert({
-        usuario_id, plano: planoNovo,
-        mp_payment_id: String(payment.id),
-        mp_status: payment.status,
-        valor: planInfoUp.valor,
-      });
-      if (insertErr) console.error('Erro ao salvar em pagamentos:', insertErr.message);
-
-      if (payment.status !== 'approved') {
-        return res.status(200).json({
-          ok: false, status: payment.status,
-          error: traduzirErro(payment.status_detail),
-          debug_detail: payment.status_detail || null,
-        });
-      }
-
-      await ativarPlano(usuario_id, planoNovo);
-      return res.status(200).json({ ok: true, status: 'approved', plano: planoNovo });
-
-    } catch (err) {
-      console.error('cobrar_cartao_salvo error:', err);
       return res.status(500).json({ error: err.message });
     }
   }
