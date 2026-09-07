@@ -884,7 +884,8 @@ async function saveConfiguracoes(chave,valor){
 
 async function assinarPlano(uid,email,nome,plano,valor){
   const r=await api('assinar',{method:'POST',body:{usuario_id:uid,email,nome,plano,valor}});
-  if(r.ok&&r.init_point){window.location.href=r.init_point;return true;}
+  if(r&&r.ok&&r.init_point){window.location.href=r.init_point;return true;}
+  console.error("assinarPlano: resposta inesperada da API",r);
   return false;
 }
 
@@ -2017,10 +2018,10 @@ function bindEvents(){
     if(btn)btn.textContent=showing?'👁':'🙈';
   });
 
-  on("btnUpgOk","click",async function(){
-    var plano=state.upgPlano||'libaneo';var p=PLANOS[plano];
-    if(state.user){var ok=await assinarPlano(state.user.id,state.user.email,state.user.nome,plano,p.preco);if(!ok)showToast("Erro ao abrir pagamento.","e");}
-    setState({upgModal:false});
+  on("btnUpgOk","click",function(){
+    var plano=state.upgPlano||'libaneo';
+    if(!state.user){showToast("Faça login pra assinar um plano.","w");setState({upgModal:false,scr:"auth"});return;}
+    setState({upgModal:false,scr:"pagamento",planoSelecionado:plano,pagStatus:null,pagErro:null});
   });
   on("btnUpgX","click",function(){setState({upgModal:false,scr:"planos"});});
   var ov=document.getElementById("upgOverlay");
@@ -2034,9 +2035,10 @@ function bindEvents(){
   on("btnUpgVygotsky","click",function(){setState({upgModal:true,upgPlano:'vygotsky'});});
   on("btnUpgPiaget","click",function(){setState({upgModal:true,upgPlano:'piaget'});});
 
-  document.querySelectorAll("[data-upgplano]").forEach(function(btn){btn.addEventListener("click",async function(){
-    var plano=btn.dataset.upgplano;var p=PLANOS[plano];
-    if(state.user){var ok=await assinarPlano(state.user.id,state.user.email,state.user.nome,plano,p.preco);if(!ok)showToast("Erro ao abrir pagamento.","e");}
+  document.querySelectorAll("[data-upgplano]").forEach(function(btn){btn.addEventListener("click",function(){
+    var plano=btn.dataset.upgplano;
+    if(!state.user){showToast("Faça login pra assinar um plano.","w");setState({scr:"auth"});return;}
+    setState({scr:"pagamento",planoSelecionado:plano,pagStatus:null,pagErro:null});
   });});
 
   on("btnVagaBack","click",function(){setState({selVaga:null});});
