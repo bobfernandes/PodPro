@@ -16,8 +16,14 @@ async function atualizarPlano(usuario_id, plano) {
     .from('usuarios').select('plano').eq('id', usuario_id).single();
   const planoAtual = user?.plano || 'ferreiro';
   if ((NIVEL_PLANO[plano] ?? 0) >= (NIVEL_PLANO[planoAtual] ?? 0)) {
-    await supabase.from('usuarios').update({ plano }).eq('id', usuario_id);
-    console.log(`✅ Plano atualizado: ${usuario_id} → ${plano}`);
+    const vencimento = new Date();
+    vencimento.setDate(vencimento.getDate() + 30);
+    await supabase.from('usuarios').update({
+      plano,
+      plano_vencimento: vencimento.toISOString(),
+      plano_cancelado: false,
+    }).eq('id', usuario_id);
+    console.log(`✅ Plano atualizado: ${usuario_id} → ${plano} (vence ${vencimento.toDateString()})`);
     return true;
   }
   return false;
@@ -107,7 +113,7 @@ module.exports = async (req, res) => {
           await supabase.from('pagamentos').upsert({
             usuario_id: ref.usuario_id,
             plano: ref.plano,
-            mp_payment_id: preapprovalId,
+            mp_payment_id: String(dataId),
             mp_status: 'approved',
             valor: pa.auto_recurring?.transaction_amount || 0,
           }, { onConflict: 'mp_payment_id' });

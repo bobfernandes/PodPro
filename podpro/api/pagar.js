@@ -64,6 +64,46 @@ module.exports = async (req, res) => {
     return res.status(200).json({ ok: true, plano_vencimento: user.plano_vencimento || null });
   }
 
+  // ── Ação: CHECKOUT EXTERNO (fallback quando o Brick embutido falha, ex: Safari ITP) ──
+  if (req.body.action === 'checkout_externo') {
+    const { usuario_id, email, plano: planoExt } = req.body;
+    if (!usuario_id || !email || !planoExt)
+      return res.status(400).json({ error: 'Campos obrigatórios ausentes' });
+    const planInfoExt = PLANOS[planoExt];
+    if (!planInfoExt) return res.status(400).json({ error: 'Plano inválido' });
+
+    const origin = req.headers.origin || 'https://project-lfk7g.vercel.app';
+    try {
+      const pref = await mpPost('/checkout/preferences', {
+        items: [{
+          title: planInfoExt.nome,
+          quantity: 1,
+          unit_price: planInfoExt.valor,
+          currency_id: 'BRL',
+        }],
+        payer: { email },
+        external_reference: JSON.stringify({ usuario_id, plano: planoExt }),
+        back_urls: {
+          success: `${origin}/?assinatura=sucesso`,
+          failure: `${origin}/?assinatura=falha`,
+          pending: `${origin}/?assinatura=pendente`,
+        },
+        auto_return: 'approved',
+        notification_url: `${origin}/api/webhook-mp`,
+        statement_descriptor: 'PODPRO',
+      });
+
+      if (!pref.init_point) {
+        console.error('Erro ao criar preferência MP:', JSON.stringify(pref));
+        return res.status(200).json({ ok: false, error: 'Não foi possível abrir o checkout externo.' });
+      }
+      return res.status(200).json({ ok: true, init_point: pref.init_point });
+    } catch (err) {
+      console.error('checkout_externo error:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
   const { usuario_id, email, plano, token, payment_method_id,
           installments, issuer_id, payer } = req.body;
 

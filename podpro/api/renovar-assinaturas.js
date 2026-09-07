@@ -41,7 +41,6 @@ module.exports = async (req, res) => {
       .from('usuarios')
       .select('id, email, plano, plano_cancelado, mp_customer_id, mp_card_id, mp_card_method, plano_vencimento')
       .not('plano', 'eq', 'ferreiro')
-      .not('mp_card_id', 'is', null)
       .lte('plano_vencimento', amanha.toISOString());
 
     if (error) throw new Error('Supabase error: ' + error.message);
@@ -64,6 +63,17 @@ module.exports = async (req, res) => {
           .eq('id', user.id);
         console.log(`⏹️ Cancelado, não renovado: ${user.email} → rebaixado para ferreiro`);
         resultados.push({ email: user.email, status: 'cancelado_rebaixado' });
+        continue;
+      }
+
+      // ── Sem cartão salvo (ex: pagou pelo checkout externo) — não dá pra ─────
+      // cobrar automaticamente, então rebaixa em vez de deixar acesso infinito.
+      if (!user.mp_customer_id || !user.mp_card_id) {
+        await supabase.from('usuarios')
+          .update({ plano: 'ferreiro', plano_vencimento: null })
+          .eq('id', user.id);
+        console.log(`⏹️ Sem cartão salvo: ${user.email} → rebaixado para ferreiro (vencido, sem renovação automática)`);
+        resultados.push({ email: user.email, status: 'sem_cartao_rebaixado' });
         continue;
       }
 
