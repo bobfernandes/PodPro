@@ -1449,10 +1449,17 @@ function renderPlanos(){
     const ativo=current===key;
     const isVyg=key==='vygotsky';
     const glowAttr='data-glow data-glow-'+key.charAt(0);
+    const cancelado=!!(state.user&&state.user.plano_cancelado);
+    const venc=(state.user&&state.user.plano_vencimento)?new Date(state.user.plano_vencimento).toLocaleDateString('pt-BR'):'';
 
     // CTA
     const cta=ativo
-      ?'<div style="background:'+p.cor+'18;border:1.5px solid '+p.cor+';border-radius:12px;padding:11px;text-align:center;margin-top:14px"><p style="font-weight:800;font-size:13px;color:'+p.cor+'">✓ Seu plano atual</p></div>'
+      ?(key==='ferreiro'
+        ?'<div style="background:'+p.cor+'18;border:1.5px solid '+p.cor+';border-radius:12px;padding:11px;text-align:center;margin-top:14px"><p style="font-weight:800;font-size:13px;color:'+p.cor+'">✓ Seu plano atual</p></div>'
+        :cancelado
+          ?'<div style="background:#fef3c7;border:1.5px solid #d97706;border-radius:12px;padding:11px;text-align:center;margin-top:14px"><p style="font-weight:800;font-size:13px;color:#92400e">Cancelado — acesso até '+(venc||'o fim do período')+'</p></div>'
+          :'<div style="background:'+p.cor+'18;border:1.5px solid '+p.cor+';border-radius:12px;padding:11px;text-align:center;margin-top:14px"><p style="font-weight:800;font-size:13px;color:'+p.cor+'">✓ Seu plano atual</p></div>'
+            +'<button class="btn btn-ghost" id="btnCancelarPlano" style="width:100%;padding:10px;font-size:12px;margin-top:8px;color:#dc2626">Cancelar assinatura</button>')
       :key==='ferreiro'
         ?'<div style="background:'+p.cor+'12;border-radius:12px;padding:11px;text-align:center;margin-top:14px"><p style="font-size:12px;color:'+p.cor+';font-weight:700">Gratuito para todos</p></div>'
         :'<button class="btn" data-upgplano="'+key+'" style="width:100%;padding:13px;font-size:14px;background:'+p.cor+';color:#fff;border-radius:12px;margin-top:14px;font-weight:800">Assinar '+p.nome+' · R$ '+p.preco.toFixed(2).replace('.',',')+'/mês</button>';
@@ -1566,7 +1573,7 @@ function initBrick(){
             setState({pagStatus:'loading'});
             showToast('Aguardando confirmação do banco...','i');
           }else{
-            setState({pagStatus:'error',pagErro:r.error||'Pagamento recusado'});
+            setState({pagStatus:'error',pagErro:(r.error||'Pagamento recusado')+(r.debug_detail?' ['+r.debug_detail+']':'')});
           }
         }catch(e){
           setState({pagStatus:'error',pagErro:e.message});
@@ -2040,6 +2047,25 @@ function bindEvents(){
     if(!state.user){showToast("Faça login pra assinar um plano.","w");setState({scr:"auth"});return;}
     setState({scr:"pagamento",planoSelecionado:plano,pagStatus:null,pagErro:null});
   });});
+
+  on("btnCancelarPlano","click",async function(){
+    if(!state.user)return;
+    var p=PLANOS[state.plano];
+    var venc=state.user.plano_vencimento?new Date(state.user.plano_vencimento).toLocaleDateString('pt-BR'):'o fim do período já pago';
+    if(!confirm('Cancelar o plano '+(p?p.nome:state.plano)+'? Você mantém acesso até '+venc+', mas não será cobrado(a) de novo depois disso.'))return;
+    try{
+      var r=await api('pagar',{method:'POST',body:{action:'cancelar',usuario_id:state.user.id}});
+      if(r&&r.ok){
+        setState({user:Object.assign({},state.user,{plano_cancelado:true,plano_vencimento:r.plano_vencimento||state.user.plano_vencimento})});
+        showToast("Assinatura cancelada. Seu acesso continua até "+venc+".","s");
+      }else{
+        showToast((r&&r.error)||"Não foi possível cancelar. Tente novamente.","e");
+      }
+    }catch(e){
+      console.error("Erro ao cancelar assinatura:",e);
+      showToast("Falha de conexão. Tenta de novo.","e");
+    }
+  });
 
   on("btnVagaBack","click",function(){setState({selVaga:null});});
   on("btnVagasRefresh","click",function(){
