@@ -1,6 +1,7 @@
 // api/renovar-assinaturas.js — cron job mensal de renovação
 // Roda diariamente, cobra quem vence em até 1 dia
 const { createClient } = require('@supabase/supabase-js');
+const crypto = require('crypto');
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
 const PLANOS = {
@@ -15,6 +16,7 @@ async function mpPost(path, body) {
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`,
+      'X-Idempotency-Key': crypto.randomUUID(),
     },
     body: JSON.stringify(body),
   });
@@ -37,7 +39,7 @@ module.exports = async (req, res) => {
 
     const { data: usuarios, error } = await supabase
       .from('usuarios')
-      .select('id, email, plano, mp_customer_id, mp_card_id, mp_card_method, plano_vencimento')
+      .select('id, email, plano, plano_cancelado, mp_customer_id, mp_card_id, mp_card_method, plano_vencimento')
       .not('plano', 'eq', 'ferreiro')
       .not('mp_card_id', 'is', null)
       .lte('plano_vencimento', amanha.toISOString());
@@ -54,6 +56,16 @@ module.exports = async (req, res) => {
     for (const user of usuarios) {
       const planInfo = PLANOS[user.plano];
       if (!planInfo) continue;
+
+      // ── Cancelado: não cobra, só deixa o acesso expirar pro Ferreiro ──────
+      if (user.plano_cancelado) {
+        await supabase.from('usuarios')
+          .update({ plano: 'ferreiro', plano_vencimento: null, plano_cancelado: false })
+          .eq('id', user.id);
+        console.log(`⏹️ Cancelado, não renovado: ${user.email} → rebaixado para ferreiro`);
+        resultados.push({ email: user.email, status: 'cancelado_rebaixado' });
+        continue;
+      }
 
       try {
         // ── 1. Gera token do cartão salvo ────────────────────────────────
@@ -80,16 +92,27 @@ module.exports = async (req, res) => {
           statement_descriptor: 'PODPRO',
         });
 
-        console.log(`Payment ${user.id}: ${payment.status}`);
+        console.log(`Payment raw ${user.id}:`, JSON.stringify(payment));
+
+        // ── 2b. Erro de API do MP (não é uma decisão de pagamento) ───────
+        // Não rebaixa o usuário por isso — é falha técnica, não recusa de cartão.
+        // Fica pendente pra tentar de novo no próximo dia.
+        if (!payment.id) {
+          const motivo = payment.message || payment.error || (payment.cause && JSON.stringify(payment.cause)) || 'Erro desconhecido';
+          console.error(`⚠️ Erro de API ao cobrar ${user.email} (usuário mantido): ${motivo}`);
+          resultados.push({ email: user.email, status: 'erro_api', detalhe: motivo });
+          continue;
+        }
 
         // ── 3. Salva histórico ────────────────────────────────────────────
-        await supabase.from('pagamentos').insert({
+        const { error: insertErr } = await supabase.from('pagamentos').insert({
           usuario_id: user.id,
           plano: user.plano,
           mp_payment_id: String(payment.id),
           mp_status: payment.status,
           valor: planInfo.valor,
         });
+        if (insertErr) console.error('Erro ao salvar em pagamentos:', insertErr.message);
 
         if (payment.status === 'approved') {
           // Renova por mais 30 dias
@@ -101,11 +124,11 @@ module.exports = async (req, res) => {
           console.log(`✅ Renovado: ${user.email} → ${novoVencimento.toDateString()}`);
           resultados.push({ email: user.email, status: 'renovado' });
         } else {
-          // Pagamento falhou — rebaixa para ferreiro
+          // Pagamento realmente recusado pelo banco/cartão — rebaixa para ferreiro
           await supabase.from('usuarios')
             .update({ plano: 'ferreiro', plano_vencimento: null })
             .eq('id', user.id);
-          console.log(`❌ Falhou: ${user.email} → rebaixado para ferreiro`);
+          console.log(`❌ Recusado: ${user.email} → rebaixado para ferreiro (${payment.status_detail})`);
           resultados.push({ email: user.email, status: 'rebaixado', detalhe: payment.status_detail });
         }
 

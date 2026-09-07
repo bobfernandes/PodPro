@@ -45,6 +45,25 @@ module.exports = async (req, res) => {
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido' });
 
+  // ── Ação: CANCELAR assinatura (mantém acesso até o vencimento já pago) ──
+  if (req.body.action === 'cancelar') {
+    const { usuario_id } = req.body;
+    if (!usuario_id) return res.status(400).json({ error: 'usuario_id ausente' });
+    const { data: user, error: findErr } = await supabase.from('usuarios')
+      .select('plano,plano_vencimento').eq('id', usuario_id).single();
+    if (findErr || !user) return res.status(404).json({ error: 'Usuário não encontrado' });
+    if (!user.plano || user.plano === 'ferreiro')
+      return res.status(400).json({ error: 'Você não tem uma assinatura paga ativa.' });
+
+    const { error: cancelErr } = await supabase.from('usuarios')
+      .update({ plano_cancelado: true }).eq('id', usuario_id);
+    if (cancelErr) {
+      console.error('Erro ao cancelar assinatura:', cancelErr.message);
+      return res.status(500).json({ error: 'Não foi possível cancelar. Tente novamente.' });
+    }
+    return res.status(200).json({ ok: true, plano_vencimento: user.plano_vencimento || null });
+  }
+
   const { usuario_id, email, plano, token, payment_method_id,
           installments, issuer_id, payer } = req.body;
 
@@ -86,12 +105,13 @@ module.exports = async (req, res) => {
     console.log('Payment:', payment.id, payment.status);
 
     // ── 2. Salva tentativa no histórico ────────────────────────────────────
-    await supabase.from('pagamentos').insert({
+    const { error: insertErr } = await supabase.from('pagamentos').insert({
       usuario_id, plano,
       mp_payment_id: String(payment.id),
       mp_status: payment.status,
       valor: planInfo.valor,
     });
+    if (insertErr) console.error('Erro ao salvar em pagamentos:', insertErr.message);
 
     if (payment.status !== 'approved') {
       console.log('Payment recusado — status_detail:', payment.status_detail);
@@ -113,6 +133,7 @@ module.exports = async (req, res) => {
       await supabase.from('usuarios').update({
         plano,
         plano_vencimento: vencimento.toISOString(),
+        plano_cancelado: false,
       }).eq('id', usuario_id);
     }
 

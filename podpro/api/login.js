@@ -33,7 +33,9 @@ module.exports = async (req, res) => {
       email: data.email,
       uf: data.uf,
       is_pro: data.is_pro,
-      plano: data.plano || 'ferreiro'   // ← campo adicionado
+      plano: data.plano || 'ferreiro',   // ← campo adicionado
+      plano_cancelado: data.plano_cancelado || false,
+      plano_vencimento: data.plano_vencimento || null
     }
   });
 };
