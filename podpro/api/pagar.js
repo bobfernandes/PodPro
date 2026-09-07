@@ -10,6 +10,21 @@ const PLANOS = {
 };
 const NIVEL = { ferreiro:0, libaneo:1, vygotsky:2, piaget:3 };
 
+async function ativarPlano(usuario_id, plano) {
+  const vencimento = new Date();
+  vencimento.setDate(vencimento.getDate() + 30);
+  const { data: user } = await supabase.from('usuarios').select('plano').eq('id', usuario_id).single();
+  const planoAtual = user?.plano || 'ferreiro';
+  if ((NIVEL[plano] ?? 0) >= (NIVEL[planoAtual] ?? 0)) {
+    await supabase.from('usuarios').update({
+      plano,
+      plano_vencimento: vencimento.toISOString(),
+      plano_cancelado: false,
+    }).eq('id', usuario_id);
+  }
+  return vencimento;
+}
+
 async function mpPost(path, body, idempotencyKey) {
   const headers = {
     'Content-Type': 'application/json',
@@ -104,6 +119,72 @@ module.exports = async (req, res) => {
     }
   }
 
+  // ── Ação: COBRAR CARTÃO SALVO (upgrade/troca de plano sem re-digitar cartão) ──
+  if (req.body.action === 'cobrar_cartao_salvo') {
+    const { usuario_id, plano: planoNovo } = req.body;
+    if (!usuario_id || !planoNovo) return res.status(400).json({ error: 'Campos obrigatórios ausentes' });
+    const planInfoUp = PLANOS[planoNovo];
+    if (!planInfoUp) return res.status(400).json({ error: 'Plano inválido' });
+
+    const { data: user, error: findErr } = await supabase.from('usuarios')
+      .select('email, mp_customer_id, mp_card_id, mp_card_method').eq('id', usuario_id).single();
+    if (findErr || !user) return res.status(404).json({ error: 'Usuário não encontrado' });
+    if (!user.mp_customer_id || !user.mp_card_id)
+      return res.status(400).json({ error: 'Nenhum cartão salvo encontrado. Use "Usar outro cartão".' });
+
+    try {
+      // ── 1. Gera token novo a partir do cartão salvo ──────────────────────
+      const cardToken = await mpPost(`/v1/customers/${user.mp_customer_id}/cards/${user.mp_card_id}/tokens`, {});
+      if (!cardToken.id) {
+        console.error('Token inválido ao cobrar cartão salvo:', JSON.stringify(cardToken));
+        return res.status(200).json({ ok: false, error: 'Não foi possível usar o cartão salvo. Tente "Usar outro cartão".' });
+      }
+
+      // ── 2. Cria cobrança ──────────────────────────────────────────────────
+      const payment = await mpPost('/v1/payments', {
+        transaction_amount: planInfoUp.valor,
+        token: cardToken.id,
+        installments: 1,
+        payment_method_id: user.mp_card_method,
+        payer: { type: 'customer', id: user.mp_customer_id },
+        external_reference: JSON.stringify({ usuario_id, plano: planoNovo }),
+        description: planInfoUp.nome,
+        statement_descriptor: 'PODPRO',
+      });
+
+      console.log('Payment (cartão salvo) raw:', JSON.stringify(payment));
+
+      if (!payment.id) {
+        const motivo = payment.message || payment.error || (payment.cause && JSON.stringify(payment.cause)) || 'Erro desconhecido';
+        console.error('Erro de API ao cobrar cartão salvo:', motivo);
+        return res.status(200).json({ ok: false, status: 'api_error', error: 'Não foi possível processar. Tente novamente.', debug_detail: motivo });
+      }
+
+      const { error: insertErr } = await supabase.from('pagamentos').insert({
+        usuario_id, plano: planoNovo,
+        mp_payment_id: String(payment.id),
+        mp_status: payment.status,
+        valor: planInfoUp.valor,
+      });
+      if (insertErr) console.error('Erro ao salvar em pagamentos:', insertErr.message);
+
+      if (payment.status !== 'approved') {
+        return res.status(200).json({
+          ok: false, status: payment.status,
+          error: traduzirErro(payment.status_detail),
+          debug_detail: payment.status_detail || null,
+        });
+      }
+
+      await ativarPlano(usuario_id, planoNovo);
+      return res.status(200).json({ ok: true, status: 'approved', plano: planoNovo });
+
+    } catch (err) {
+      console.error('cobrar_cartao_salvo error:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
   const { usuario_id, email, plano, token, payment_method_id,
           installments, issuer_id, payer } = req.body;
 
@@ -164,18 +245,8 @@ module.exports = async (req, res) => {
     }
 
     // ── 3. Pagamento aprovado — ativa plano ───────────────────────────────
-    const vencimento = new Date();
-    vencimento.setDate(vencimento.getDate() + 30);
-
     const { data: user } = await supabase.from('usuarios').select('plano,mp_customer_id').eq('id', usuario_id).single();
-    const planoAtual = user?.plano || 'ferreiro';
-    if ((NIVEL[plano] ?? 0) >= (NIVEL[planoAtual] ?? 0)) {
-      await supabase.from('usuarios').update({
-        plano,
-        plano_vencimento: vencimento.toISOString(),
-        plano_cancelado: false,
-      }).eq('id', usuario_id);
-    }
+    await ativarPlano(usuario_id, plano);
 
     // ── 4. Salva cartão para renovação futura ─────────────────────────────
     try {
@@ -199,6 +270,7 @@ module.exports = async (req, res) => {
         mp_customer_id: String(customerId),
         mp_card_id:     card.id,
         mp_card_method: payment_method_id,
+        mp_card_last4:  card.last_four_digits || null,
       }).eq('id', usuario_id);
 
       console.log(`✅ Cartão salvo: customer=${customerId} card=${card.id}`);

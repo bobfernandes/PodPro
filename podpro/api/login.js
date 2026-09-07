@@ -35,7 +35,9 @@ module.exports = async (req, res) => {
       is_pro: data.is_pro,
       plano: data.plano || 'ferreiro',   // ← campo adicionado
       plano_cancelado: data.plano_cancelado || false,
-      plano_vencimento: data.plano_vencimento || null
+      plano_vencimento: data.plano_vencimento || null,
+      tem_cartao_salvo: !!(data.mp_customer_id && data.mp_card_id),
+      mp_card_last4: data.mp_card_last4 || null
     }
   });
 };
