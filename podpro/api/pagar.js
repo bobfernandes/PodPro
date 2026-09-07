@@ -136,8 +136,13 @@ module.exports = async (req, res) => {
       // ── 1. Gera token novo a partir do cartão salvo ──────────────────────
       const cardToken = await mpPost(`/v1/customers/${user.mp_customer_id}/cards/${user.mp_card_id}/tokens`, {});
       if (!cardToken.id) {
+        const motivoToken = cardToken.message || cardToken.error || (cardToken.cause && JSON.stringify(cardToken.cause)) || 'Erro desconhecido';
         console.error('Token inválido ao cobrar cartão salvo:', JSON.stringify(cardToken));
-        return res.status(200).json({ ok: false, error: 'Não foi possível usar o cartão salvo. Tente "Usar outro cartão".' });
+        return res.status(200).json({
+          ok: false,
+          error: 'Não foi possível usar o cartão salvo. Tente "Usar outro cartão".',
+          debug_detail: motivoToken,
+        });
       }
 
       // ── 2. Cria cobrança ──────────────────────────────────────────────────
