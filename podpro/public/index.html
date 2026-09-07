@@ -884,7 +884,7 @@ async function saveConfiguracoes(chave,valor){
 
 async function assinarPlano(uid,email,nome,plano,valor){
   const r=await api('assinar',{method:'POST',body:{usuario_id:uid,email,nome,plano,valor}});
-  if(r.ok&&r.init_point){window.open(r.init_point,'_blank');return true;}
+  if(r.ok&&r.init_point){window.location.href=r.init_point;return true;}
   return false;
 }
 
