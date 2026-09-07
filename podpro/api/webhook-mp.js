@@ -49,7 +49,7 @@ module.exports = async (req, res) => {
       if (!dataId) return res.status(200).json({ ok:true, msg:'sem id' });
 
       const payment = await mpGet(`/v1/payments/${dataId}`);
-      console.log(`Payment ${dataId}: status=${payment.status} ref=${payment.external_reference}`);
+      console.log(`Payment ${dataId}: status=${payment.status} detail=${payment.status_detail} ref=${payment.external_reference}`);
 
       if (payment.status !== 'approved') {
         // Registra no banco mesmo que pendente/rejeitado
