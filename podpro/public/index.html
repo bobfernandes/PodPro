@@ -1519,7 +1519,7 @@ function renderPagamento(){
   var statusHtml='';
   if(state.pagStatus==='loading') statusHtml='<div style="text-align:center;padding:20px"><div class="spin" style="font-size:28px">↻</div><p style="color:var(--text-muted);margin-top:8px">Processando...</p></div>';
   if(state.pagStatus==='approved') statusHtml='<div style="text-align:center;padding:20px;color:#4E7A2F"><p style="font-size:40px">✅</p><p style="font-weight:900;font-size:18px">Pagamento aprovado!</p><p style="color:var(--text-muted)">Seu plano foi ativado</p></div>';
-  if(state.pagStatus==='error') statusHtml='<div style="text-align:center;padding:20px;color:#dc2626"><p style="font-size:36px">❌</p><p style="font-weight:900">Pagamento recusado</p><p style="color:var(--text-muted);font-size:13px">'+( state.pagErro||'Tente outro cartão')+'</p></div>';
+  if(state.pagStatus==='error') statusHtml='<div style="text-align:center;padding:20px;color:#dc2626"><p style="font-size:36px">❌</p><p style="font-weight:900">Pagamento recusado</p><p style="color:var(--text-muted);font-size:13px;margin-bottom:14px">'+( state.pagErro||'Tente outro cartão')+'</p><button class="btn btn-pink" id="btnPagRetry" style="padding:11px 24px;font-size:13px;margin-right:8px">Tentar novamente</button><button class="btn btn-ghost" id="btnPagExterno" style="padding:11px 24px;font-size:13px">Pagar em página externa</button></div>';
 
   return'<div class="screen fade-up">'
     +'<button class="btn btn-ghost" id="btnPagBack" style="padding:8px 16px;font-size:13px;margin-bottom:18px;color:var(--text)">← Voltar</button>'
@@ -1543,6 +1543,14 @@ function initBrick(){
   var mp=new MercadoPago(state.mpPublicKey,{locale:'pt-BR'});
   var bricksBuilder=mp.bricks();
 
+  // ── Watchdog: se o Brick não ficar pronto em 10s, para de travar em silêncio ──
+  var brickReady=false;
+  var watchdog=setTimeout(function(){
+    if(!brickReady&&state.scr==='pagamento'&&!state.pagStatus){
+      setState({pagStatus:'error',pagErro:'O formulário de pagamento demorou demais pra carregar. Isso costuma acontecer com bloqueio de rastreamento de terceiros no navegador (comum no Safari/iOS). Tenta de novo, ou testa em outro navegador.'});
+    }
+  },10000);
+
   bricksBuilder.create('cardPayment','cardPaymentBrick_container',{
     initialization:{
       amount:p.preco,
@@ -1553,7 +1561,7 @@ function initBrick(){
       paymentMethods:{minInstallments:1,maxInstallments:1}
     },
     callbacks:{
-      onReady:function(){console.log('Brick pronto');},
+      onReady:function(){brickReady=true;clearTimeout(watchdog);console.log('Brick pronto');},
       onSubmit:async function(cardFormData){
         setState({pagStatus:'loading'});
         try{
@@ -1580,6 +1588,7 @@ function initBrick(){
         }
       },
       onError:function(err){
+        brickReady=true;clearTimeout(watchdog);
         console.error('Brick error:',err);
         setState({pagStatus:'error',pagErro:err.message||'Erro no formulário'});
       }
@@ -2286,6 +2295,19 @@ function bindEvents(){
   document.querySelectorAll('[data-simans]').forEach(function(btn){btn.addEventListener('click',function(){answerSim(parseInt(btn.dataset.simans));});});
   on('btnFichasBack','click',function(){setState({scr:'home'});});
   on('btnPagBack','click',function(){setState({scr:'planos',pagStatus:null,pagErro:null});});
+  on('btnPagRetry','click',function(){setState({pagStatus:null,pagErro:null});});
+  on('btnPagExterno','click',async function(){
+    var plano=state.planoSelecionado;
+    if(!plano||!state.user)return;
+    try{
+      var r=await api('pagar',{method:'POST',body:{action:'checkout_externo',usuario_id:state.user.id,email:state.user.email,plano:plano}});
+      if(r&&r.ok&&r.init_point){window.location.href=r.init_point;}
+      else{showToast((r&&r.error)||'Não foi possível abrir o checkout externo.','e');}
+    }catch(e){
+      console.error('Erro checkout externo:',e);
+      showToast('Falha de conexão. Tenta de novo.','e');
+    }
+  });
   on('btnStartSim','click',function(){startSimulado();});
   on('btnSimSair','click',function(){setState({simQuiz:null,simDone:false});});
   on('btnSimPrev','click',function(){prevSimQ();});
