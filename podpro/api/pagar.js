@@ -65,6 +65,20 @@ module.exports = async (req, res) => {
       three_d_secure_mode: 'optional',
     });
 
+    console.log('Payment raw response:', JSON.stringify(payment));
+
+    // ── 1b. Detecta erro de requisição à API do MP (não é uma decisão de pagamento) ──
+    if (!payment.id) {
+      const motivo = payment.message || payment.error || (payment.cause && JSON.stringify(payment.cause)) || 'Erro desconhecido';
+      console.error('Erro ao criar pagamento no MP:', motivo);
+      return res.status(200).json({
+        ok: false,
+        status: 'api_error',
+        error: 'Não foi possível processar o pagamento. Tente novamente.',
+        debug_detail: motivo,
+      });
+    }
+
     console.log('Payment:', payment.id, payment.status);
 
     // ── 2. Salva tentativa no histórico ────────────────────────────────────
@@ -76,10 +90,12 @@ module.exports = async (req, res) => {
     });
 
     if (payment.status !== 'approved') {
+      console.log('Payment recusado — status_detail:', payment.status_detail);
       return res.status(200).json({
         ok: false,
         status: payment.status,
         error: traduzirErro(payment.status_detail),
+        debug_detail: payment.status_detail || null,
       });
     }
 
