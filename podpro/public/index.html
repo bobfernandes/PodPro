@@ -990,7 +990,7 @@ function render(){
   applyGlow();
   applyTheme(state.theme);
   if(state.scr==='tarefas'){setTimeout(initTrilha,50);}
-  if(state.scr==='pagamento'&&!state.pagStatus){setTimeout(initBrick,200);}
+  if(state.scr==='pagamento'&&!state.pagStatus&&!(state.user&&state.user.tem_cartao_salvo&&!state.forcarNovoCartao)){setTimeout(initBrick,200);}
 
 
 }
@@ -1128,15 +1128,15 @@ function renderAuth(){
     +'<button class="auth-tab '+(state.aMode==="register"?"active":"")+'" id="authTabReg">Criar conta</button>'
   +'</div>';
 
-  var fields='<div style="display:flex;flex-direction:column;gap:11px">'
-    +(state.aMode==="register"?'<input class="auth-inp" id="aNome" placeholder="Nome completo"/>':'')
-    +'<input class="auth-inp" id="aEmail" placeholder="E-mail" type="email"/>'
+  var fields='<form id="authForm" autocomplete="on" style="display:flex;flex-direction:column;gap:11px">'
+    +(state.aMode==="register"?'<input class="auth-inp" id="aNome" name="name" autocomplete="name" placeholder="Nome completo"/>':'')
+    +'<input class="auth-inp" id="aEmail" name="email" autocomplete="email" placeholder="E-mail" type="email"/>'
     +'<div style="position:relative">'
-      +'<input class="auth-inp" id="aSenha" placeholder="Senha" type="password" style="padding-right:46px"/>'
+      +'<input class="auth-inp" id="aSenha" name="password" autocomplete="'+(state.aMode==="login"?"current-password":"new-password")+'" placeholder="Senha" type="password" style="padding-right:46px"/>'
       +'<button id="btnTogglePwd" type="button" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:17px;cursor:pointer;opacity:.45;padding:4px;line-height:1;color:#F5E4C0">👁</button>'
     +'</div>'
-    +(state.aMode==="register"?'<select class="auth-inp" id="aUf">'+Object.entries(UF).sort(function(a,b){return a[1].localeCompare(b[1]);}).map(function(e){return'<option value="'+e[0]+'" '+(e[0]==="SP"?"selected":"")+'>'+e[1]+' ('+e[0]+')</option>';}).join("")+'</select>':"")
-    +'<button class="auth-submit" id="btnAuth">'
+    +(state.aMode==="register"?'<select class="auth-inp" id="aUf" name="uf">'+Object.entries(UF).sort(function(a,b){return a[1].localeCompare(b[1]);}).map(function(e){return'<option value="'+e[0]+'" '+(e[0]==="SP"?"selected":"")+'>'+e[1]+' ('+e[0]+')</option>';}).join("")+'</select>':"")
+    +'<button class="auth-submit" id="btnAuth" type="submit">'
       +(state.aLoading
         ?'<span style="display:inline-block;width:18px;height:18px;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle"></span>'
         :'<span style="display:flex;align-items:center;justify-content:center;gap:8px">'+(state.aMode==="login"?"Entrar":"Criar conta grátis")+' <span style="font-size:18px">→</span></span>'
@@ -1146,7 +1146,7 @@ function renderAuth(){
       ?'<p style="text-align:center;color:rgba(245,228,192,.42);font-size:13px;margin-top:4px">Não tem conta? <span id="authSwitch" style="color:#F0428E;cursor:pointer;font-weight:800;text-decoration:underline">Cadastre-se grátis</span></p>'
       :'<p style="text-align:center;color:rgba(245,228,192,.42);font-size:13px;margin-top:4px">Já tem conta? <span id="authSwitch2" style="color:#F0428E;cursor:pointer;font-weight:800;text-decoration:underline">Entrar</span></p>'
     )
-  +'</div>';
+  +'</form>';
 
   return'<div class="screen auth-screen fade-up">'
     +'<div class="auth-blob auth-blob-1"></div>'
@@ -1516,10 +1516,27 @@ function renderFichas(){
 function renderPagamento(){
   var plano=state.planoSelecionado;
   var p=PLANOS[plano]||PLANOS.libaneo;
+  var usaCartaoSalvo=!!(state.user&&state.user.tem_cartao_salvo&&!state.forcarNovoCartao);
   var statusHtml='';
   if(state.pagStatus==='loading') statusHtml='<div style="text-align:center;padding:20px"><div class="spin" style="font-size:28px">↻</div><p style="color:var(--text-muted);margin-top:8px">Processando...</p></div>';
   if(state.pagStatus==='approved') statusHtml='<div style="text-align:center;padding:20px;color:#4E7A2F"><p style="font-size:40px">✅</p><p style="font-weight:900;font-size:18px">Pagamento aprovado!</p><p style="color:var(--text-muted)">Seu plano foi ativado</p></div>';
   if(state.pagStatus==='error') statusHtml='<div style="text-align:center;padding:20px;color:#dc2626"><p style="font-size:36px">❌</p><p style="font-weight:900">Pagamento recusado</p><p style="color:var(--text-muted);font-size:13px;margin-bottom:14px">'+( state.pagErro||'Tente outro cartão')+'</p><button class="btn btn-pink" id="btnPagRetry" style="padding:11px 24px;font-size:13px;margin-right:8px">Tentar novamente</button><button class="btn btn-ghost" id="btnPagExterno" style="padding:11px 24px;font-size:13px">Pagar em página externa</button></div>';
+
+  var corpo;
+  if(state.pagStatus){
+    corpo=statusHtml;
+  }else if(usaCartaoSalvo){
+    corpo='<div class="card" style="border-radius:16px;padding:18px;text-align:center">'
+      +'<p style="font-size:28px;margin-bottom:6px">💳</p>'
+      +'<p style="font-weight:800;font-size:15px;color:var(--text)">Cartão salvo terminando em '+(state.user.mp_card_last4||'••••')+'</p>'
+      +'<p style="color:var(--text-muted);font-size:13px;margin:6px 0 16px">Vamos cobrar R$ '+p.preco.toFixed(2).replace('.',',')+' nesse cartão pra ativar o plano '+p.nome+'.</p>'
+      +'<button class="btn btn-pink" id="btnCobrarSalvo" style="width:100%;padding:13px;font-size:14px;font-weight:800">Confirmar assinatura</button>'
+      +'<button class="btn btn-ghost" id="btnUsarOutroCartao" style="width:100%;padding:10px;font-size:12px;margin-top:8px;color:var(--text-muted)">Usar outro cartão</button>'
+    +'</div>';
+  }else{
+    corpo=(state.user&&state.user.tem_cartao_salvo?'<button class="btn btn-ghost" id="btnUsarCartaoSalvo" style="padding:8px 14px;font-size:12px;margin-bottom:12px;color:var(--text-muted)">← Usar cartão salvo</button>':'')
+      +'<div id="cardPaymentBrick_container"></div>';
+  }
 
   return'<div class="screen fade-up">'
     +'<button class="btn btn-ghost" id="btnPagBack" style="padding:8px 16px;font-size:13px;margin-bottom:18px;color:var(--text)">← Voltar</button>'
@@ -1528,7 +1545,7 @@ function renderPagamento(){
       +'<h2 style="font-size:24px;font-weight:700;color:var(--text);font-family:\'Playfair Display\',serif">'+p.emoji+' Plano '+p.nome+'</h2>'
       +'<p style="font-size:20px;font-weight:900;color:'+p.cor+'">R$ '+p.preco.toFixed(2).replace('.',',')+' <span style="font-size:13px;font-weight:600;color:var(--text-muted)">/mês</span></p>'
     +'</div>'
-    +(state.pagStatus?statusHtml:'<div id="cardPaymentBrick_container"></div>')
+    +corpo
   +'</div>'+renderNav('planos');
 }
 
@@ -2024,8 +2041,8 @@ function bindEvents(){
   on("authTabReg","click",function(){setState({aMode:"register",_showPwd:false});});
   on("authSwitch","click",function(){setState({aMode:"register"});});
   on("authSwitch2","click",function(){setState({aMode:"login"});});
-  on("btnAuth","click",handleAuth);
-  on("aSenha","keydown",function(e){if(e.key==="Enter")handleAuth();});
+  var authForm=document.getElementById("authForm");
+  if(authForm)authForm.addEventListener("submit",function(e){e.preventDefault();handleAuth();});
   on("btnTogglePwd","click",function(){
     var inp=$("aSenha");var btn=$("btnTogglePwd");
     if(!inp)return;
@@ -2037,7 +2054,7 @@ function bindEvents(){
   on("btnUpgOk","click",function(){
     var plano=state.upgPlano||'libaneo';
     if(!state.user){showToast("Faça login pra assinar um plano.","w");setState({upgModal:false,scr:"auth"});return;}
-    setState({upgModal:false,scr:"pagamento",planoSelecionado:plano,pagStatus:null,pagErro:null});
+    setState({upgModal:false,scr:"pagamento",planoSelecionado:plano,pagStatus:null,pagErro:null,forcarNovoCartao:false});
   });
   on("btnUpgX","click",function(){setState({upgModal:false,scr:"planos"});});
   var ov=document.getElementById("upgOverlay");
@@ -2054,7 +2071,7 @@ function bindEvents(){
   document.querySelectorAll("[data-upgplano]").forEach(function(btn){btn.addEventListener("click",function(){
     var plano=btn.dataset.upgplano;
     if(!state.user){showToast("Faça login pra assinar um plano.","w");setState({scr:"auth"});return;}
-    setState({scr:"pagamento",planoSelecionado:plano,pagStatus:null,pagErro:null});
+    setState({scr:"pagamento",planoSelecionado:plano,pagStatus:null,pagErro:null,forcarNovoCartao:false});
   });});
 
   on("btnCancelarPlano","click",async function(){
@@ -2296,6 +2313,27 @@ function bindEvents(){
   on('btnFichasBack','click',function(){setState({scr:'home'});});
   on('btnPagBack','click',function(){setState({scr:'planos',pagStatus:null,pagErro:null});});
   on('btnPagRetry','click',function(){setState({pagStatus:null,pagErro:null});});
+  on('btnUsarOutroCartao','click',function(){setState({forcarNovoCartao:true});});
+  on('btnUsarCartaoSalvo','click',function(){setState({forcarNovoCartao:false});});
+  on('btnCobrarSalvo','click',async function(){
+    var plano=state.planoSelecionado;
+    if(!plano||!state.user)return;
+    var p=PLANOS[plano];
+    setState({pagStatus:'loading'});
+    try{
+      var r=await api('pagar',{method:'POST',body:{action:'cobrar_cartao_salvo',usuario_id:state.user.id,plano:plano}});
+      if(r.ok&&r.status==='approved'){
+        setState({plano:r.plano,pagStatus:'approved'});
+        showToast('Plano '+(p?p.nome:plano)+' ativado! 🎉');
+        setTimeout(function(){setState({scr:'home',pagStatus:null});},2500);
+      }else{
+        setState({pagStatus:'error',pagErro:(r.error||'Pagamento recusado')+(r.debug_detail?' ['+r.debug_detail+']':'')});
+      }
+    }catch(e){
+      console.error('Erro ao cobrar cartão salvo:',e);
+      setState({pagStatus:'error',pagErro:e.message});
+    }
+  });
   on('btnPagExterno','click',async function(){
     var plano=state.planoSelecionado;
     if(!plano||!state.user)return;
